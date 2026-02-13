@@ -16,11 +16,15 @@ const generateToken = (userId) => {
 // @access  Public
 exports.register = async (req, res, next) => {
   try {
+    console.log('📝 Registration attempt:', req.body);
+    
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
+        message: 'Validation failed',
         errors: errors.array()
       });
     }
@@ -28,8 +32,9 @@ exports.register = async (req, res, next) => {
     const { name, email, password } = req.body;
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
+      console.log('❌ User already exists:', email);
       return res.status(400).json({
         success: false,
         message: 'User already exists with this email'
@@ -39,9 +44,11 @@ exports.register = async (req, res, next) => {
     // Create user
     const user = await User.create({
       name,
-      email,
+      email: email.toLowerCase(),
       password
     });
+
+    console.log('✅ User created successfully:', user._id);
 
     // Generate token
     const token = generateToken(user._id);
@@ -56,6 +63,7 @@ exports.register = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('❌ Registration error:', error);
     next(error);
   }
 };
@@ -65,10 +73,14 @@ exports.register = async (req, res, next) => {
 // @access  Public
 exports.login = async (req, res, next) => {
   try {
+    console.log('🔑 Login attempt:', req.body.email);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
+        message: 'Validation failed',
         errors: errors.array()
       });
     }
@@ -76,8 +88,9 @@ exports.login = async (req, res, next) => {
     const { email, password } = req.body;
 
     // Check if user exists
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
     if (!user) {
+      console.log('❌ User not found:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -87,11 +100,14 @@ exports.login = async (req, res, next) => {
     // Check password
     const isPasswordMatch = await user.comparePassword(password);
     if (!isPasswordMatch) {
+      console.log('❌ Invalid password for user:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
       });
     }
+
+    console.log('✅ Login successful:', user._id);
 
     // Generate token
     const token = generateToken(user._id);
@@ -106,6 +122,7 @@ exports.login = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('❌ Login error:', error);
     next(error);
   }
 };
@@ -117,6 +134,13 @@ exports.getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.userId);
     
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     res.status(200).json({
       success: true,
       user: {
@@ -126,6 +150,7 @@ exports.getMe = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('❌ Get me error:', error);
     next(error);
   }
 };

@@ -1,93 +1,102 @@
 const PDFDocument = require('pdfkit');
 
 exports.generatePDF = async (estimate) => {
-  return new Promise((resolve) => {
-    const doc = new PDFDocument({ margin: 50 });
-    const buffers = [];
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ margin: 50, size: 'A4' });
+      const buffers = [];
 
-    doc.on('data', buffers.push.bind(buffers));
-    doc.on('end', () => {
-      const pdfData = Buffer.concat(buffers);
-      resolve(pdfData);
-    });
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        const pdfData = Buffer.concat(buffers);
+        resolve(pdfData);
+      });
+      doc.on('error', reject);
 
-    // Header
-    doc.fontSize(25)
-       .font('Helvetica-Bold')
-       .text('Project Cost Estimator', 50, 50)
-       .fontSize(12)
-       .font('Helvetica')
-       .text(`Estimate #: ${estimate.estimateNumber}`, 50, 100)
-       .text(`Date: ${new Date(estimate.createdAt).toLocaleDateString()}`, 50, 115)
-       .text(`Status: ${estimate.status}`, 50, 130);
+      // Validate estimate data
+      if (!estimate) {
+        throw new Error('No estimate data provided');
+      }
 
-    // Project Information
-    doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('Project Information', 50, 180)
-       .moveDown();
+      // Header
+      doc.fontSize(20)
+         .font('Helvetica-Bold')
+         .text('Project Cost Estimator', 50, 50)
+         .fontSize(12)
+         .font('Helvetica')
+         .text(`Estimate #: ${estimate.estimateNumber || 'N/A'}`, 50, 100)
+         .text(`Date: ${estimate.createdAt ? new Date(estimate.createdAt).toLocaleDateString() : 'N/A'}`, 50, 115)
+         .text(`Status: ${estimate.status || 'Draft'}`, 50, 130);
 
-    doc.fontSize(12)
-       .font('Helvetica')
-       .text(`Project Name: ${estimate.project.name}`, 50, 210)
-       .text(`Project Type: ${estimate.project.projectType}`, 50, 225)
-       .text(`Duration: ${estimate.project.duration} months`, 50, 240)
-       .text(`Team Size: ${estimate.project.teamSize} people`, 50, 255)
-       .text(`Complexity: ${estimate.project.complexityLevel}`, 50, 270);
-
-    // Cost Breakdown
-    doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('Cost Breakdown', 50, 320)
-       .moveDown();
-
-    const y = 360;
-    doc.fontSize(12)
-       .font('Helvetica')
-       .text('Labor Cost:', 50, y)
-       .text(`$${estimate.costBreakdown.laborCost.toLocaleString()}`, 300, y, { align: 'right' })
-       
-       .text('Material Cost:', 50, y + 20)
-       .text(`$${estimate.costBreakdown.materialCost.toLocaleString()}`, 300, y + 20, { align: 'right' })
-       
-       .text('Equipment Cost:', 50, y + 40)
-       .text(`$${estimate.costBreakdown.equipmentCost.toLocaleString()}`, 300, y + 40, { align: 'right' })
-       
-       .text('Miscellaneous Cost:', 50, y + 60)
-       .text(`$${estimate.costBreakdown.miscCost.toLocaleString()}`, 300, y + 60, { align: 'right' });
-
-    // Total
-    doc.moveTo(50, y + 90)
-       .lineTo(550, y + 90)
-       .stroke();
-
-    doc.fontSize(14)
-       .font('Helvetica-Bold')
-       .text('Total Estimated Cost:', 50, y + 110)
-       .text(`$${estimate.costBreakdown.totalCost.toLocaleString()}`, 300, y + 110, { align: 'right' });
-
-    // Notes
-    if (estimate.notes) {
+      // Project Information
       doc.fontSize(16)
          .font('Helvetica-Bold')
-         .text('Notes', 50, 550)
-         .moveDown();
+         .text('Project Information', 50, 180);
 
       doc.fontSize(12)
          .font('Helvetica')
-         .text(estimate.notes, 50, 580);
+         .text(`Project Name: ${estimate.project?.name || 'N/A'}`, 50, 210)
+         .text(`Project Type: ${estimate.project?.projectType || 'N/A'}`, 50, 225)
+         .text(`Duration: ${estimate.project?.duration || 0} months`, 50, 240)
+         .text(`Team Size: ${estimate.project?.teamSize || 0} people`, 50, 255)
+         .text(`Complexity: ${estimate.project?.complexityLevel || 'N/A'}`, 50, 270);
+
+      // Cost Breakdown
+      doc.fontSize(16)
+         .font('Helvetica-Bold')
+         .text('Cost Breakdown', 50, 320);
+
+      const y = 360;
+      const costs = estimate.costBreakdown || {};
+      
+      doc.fontSize(12)
+         .font('Helvetica')
+         .text('Labor Cost:', 50, y)
+         .text(`$${(costs.laborCost || 0).toLocaleString()}`, 300, y, { align: 'right' })
+         
+         .text('Material Cost:', 50, y + 20)
+         .text(`$${(costs.materialCost || 0).toLocaleString()}`, 300, y + 20, { align: 'right' })
+         
+         .text('Equipment Cost:', 50, y + 40)
+         .text(`$${(costs.equipmentCost || 0).toLocaleString()}`, 300, y + 40, { align: 'right' })
+         
+         .text('Miscellaneous Cost:', 50, y + 60)
+         .text(`$${(costs.miscCost || 0).toLocaleString()}`, 300, y + 60, { align: 'right' });
+
+      // Total
+      doc.moveTo(50, y + 90)
+         .lineTo(550, y + 90)
+         .stroke();
+
+      doc.fontSize(14)
+         .font('Helvetica-Bold')
+         .text('Total Estimated Cost:', 50, y + 110)
+         .text(`$${(costs.totalCost || 0).toLocaleString()}`, 300, y + 110, { align: 'right' });
+
+      // Notes
+      if (estimate.notes) {
+        doc.fontSize(16)
+           .font('Helvetica-Bold')
+           .text('Notes', 50, 550);
+
+        doc.fontSize(12)
+           .font('Helvetica')
+           .text(estimate.notes, 50, 580);
+      }
+
+      // Footer
+      doc.fontSize(10)
+         .font('Helvetica')
+         .text(
+           'Generated by Project Cost Estimator',
+           50,
+           doc.page.height - 50,
+           { align: 'center' }
+         );
+
+      doc.end();
+    } catch (error) {
+      reject(error);
     }
-
-    // Footer
-    doc.fontSize(10)
-       .font('Helvetica')
-       .text(
-         'Generated by Project Cost Estimator',
-         50,
-         doc.page.height - 50,
-         { align: 'center' }
-       );
-
-    doc.end();
   });
 };

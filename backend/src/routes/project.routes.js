@@ -1,28 +1,25 @@
 const express = require('express');
 const router = express.Router();
-const {
-  createProject,
-  getProjects,
-  getProject,
-  updateProject,
-  deleteProject,
-  getProjectStats
-} = require('../controllers/project.controller');
+const projectController = require('../controllers/project.controller');
 const { protect } = require('../middleware/auth.middleware');
 const { validateProject } = require('../middleware/validation.middleware');
+
+// Debug - log what's imported
+console.log('📦 Project Controller exports:', Object.keys(projectController));
 
 // All routes require authentication
 router.use(protect);
 
+// Project routes
 router.route('/')
-  .post(validateProject, createProject)
-  .get(getProjects);
+  .post(validateProject, projectController.createProject)
+  .get(projectController.getProjects);
 
-router.get('/stats/summary', getProjectStats);
+router.get('/stats/summary', projectController.getProjectStats);
 
 router.route('/:id')
-  .get(getProject)
-  .put(validateProject, updateProject)
-  .delete(deleteProject);
+  .get(projectController.getProject)
+  .put(validateProject, projectController.updateProject)
+  .delete(projectController.deleteProject);
 
 module.exports = router;

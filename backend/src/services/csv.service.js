@@ -1,42 +1,60 @@
-const { Parser } = require('json2csv');
-
 exports.generateCSV = async (estimate) => {
-  const fields = [
-    'Estimate Number',
-    'Date',
-    'Status',
-    'Project Name',
-    'Project Type',
-    'Duration (months)',
-    'Team Size',
-    'Complexity Level',
-    'Labor Cost',
-    'Material Cost',
-    'Equipment Cost',
-    'Misc Cost',
-    'Total Cost',
-    'Notes'
-  ];
+  try {
+    if (!estimate) {
+      throw new Error('No estimate data provided');
+    }
 
-  const data = [{
-    'Estimate Number': estimate.estimateNumber,
-    'Date': new Date(estimate.createdAt).toLocaleDateString(),
-    'Status': estimate.status,
-    'Project Name': estimate.project.name,
-    'Project Type': estimate.project.projectType,
-    'Duration (months)': estimate.project.duration,
-    'Team Size': estimate.project.teamSize,
-    'Complexity Level': estimate.project.complexityLevel,
-    'Labor Cost': estimate.costBreakdown.laborCost,
-    'Material Cost': estimate.costBreakdown.materialCost,
-    'Equipment Cost': estimate.costBreakdown.equipmentCost,
-    'Misc Cost': estimate.costBreakdown.miscCost,
-    'Total Cost': estimate.costBreakdown.totalCost,
-    'Notes': estimate.notes || ''
-  }];
+    // Escape CSV fields properly
+    const escapeCSV = (field) => {
+      if (field === null || field === undefined) return '';
+      const stringField = String(field);
+      if (stringField.includes(',') || stringField.includes('"') || stringField.includes('\n')) {
+        return `"${stringField.replace(/"/g, '""')}"`;
+      }
+      return stringField;
+    };
 
-  const json2csvParser = new Parser({ fields });
-  const csv = json2csvParser.parse(data);
-  
-  return Buffer.from(csv, 'utf-8');
+    // Create CSV headers
+    const headers = [
+      'Estimate Number',
+      'Date',
+      'Status',
+      'Project Name',
+      'Project Type',
+      'Duration (months)',
+      'Team Size',
+      'Complexity Level',
+      'Labor Cost',
+      'Material Cost',
+      'Equipment Cost',
+      'Misc Cost',
+      'Total Cost',
+      'Notes'
+    ].join(',');
+
+    // Create CSV row with safe access
+    const row = [
+      escapeCSV(estimate.estimateNumber),
+      escapeCSV(estimate.createdAt ? new Date(estimate.createdAt).toLocaleDateString() : ''),
+      escapeCSV(estimate.status),
+      escapeCSV(estimate.project?.name),
+      escapeCSV(estimate.project?.projectType),
+      escapeCSV(estimate.project?.duration),
+      escapeCSV(estimate.project?.teamSize),
+      escapeCSV(estimate.project?.complexityLevel),
+      escapeCSV(estimate.costBreakdown?.laborCost),
+      escapeCSV(estimate.costBreakdown?.materialCost),
+      escapeCSV(estimate.costBreakdown?.equipmentCost),
+      escapeCSV(estimate.costBreakdown?.miscCost),
+      escapeCSV(estimate.costBreakdown?.totalCost),
+      escapeCSV(estimate.notes || '')
+    ].join(',');
+
+    const csv = `${headers}\n${row}`;
+    
+    return Buffer.from(csv, 'utf-8');
+  } catch (error) {
+    console.error('CSV generation error:', error);
+    throw error;
+  }
 };

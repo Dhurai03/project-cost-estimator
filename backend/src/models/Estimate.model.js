@@ -4,7 +4,8 @@ const estimateSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: true,
+    index: true
   },
   project: {
     type: mongoose.Schema.Types.ObjectId,
@@ -13,30 +14,32 @@ const estimateSchema = new mongoose.Schema({
   },
   estimateNumber: {
     type: String,
-    required: true,
-    unique: true
+    unique: true,
+    sparse: true // Allow null/undefined temporarily
+  },
+  projectDetails: {
+    name: String,
+    duration: Number,
+    projectType: String,
+    teamSize: Number,
+    complexityLevel: String
+  },
+  costInputs: {
+    laborCostPerHour: Number,
+    materialCost: Number,
+    equipmentCost: Number,
+    miscExpenses: Number
   },
   costBreakdown: {
-    laborCost: {
-      type: Number,
-      required: true
-    },
-    materialCost: {
-      type: Number,
-      required: true
-    },
-    equipmentCost: {
-      type: Number,
-      required: true
-    },
-    miscCost: {
-      type: Number,
-      required: true
-    },
-    totalCost: {
-      type: Number,
-      required: true
-    }
+    laborCost: Number,
+    materialCost: Number,
+    equipmentCost: Number,
+    miscCost: Number,
+    totalCost: Number
+  },
+  multipliers: {
+    complexityMultiplier: { type: Number, default: 1.0 },
+    projectTypeMultiplier: { type: Number, default: 1.0 }
   },
   status: {
     type: String,
@@ -45,26 +48,38 @@ const estimateSchema = new mongoose.Schema({
   },
   notes: {
     type: String,
-    maxlength: [500, 'Notes cannot be more than 500 characters']
+    default: ''
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
+  currency: {
+    type: String,
+    default: 'USD'
   }
 }, {
   timestamps: true
 });
 
-// Generate estimate number before saving
-estimateSchema.pre('save', async function(next) {
-  if (!this.estimateNumber) {
-    const date = new Date();
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const count = await mongoose.model('Estimate').countDocuments();
-    this.estimateNumber = `EST-${year}${month}-${String(count + 1).padStart(4, '0')}`;
+// ✅ FIXED: Generate estimate number BEFORE validation
+estimateSchema.pre('validate', async function(next) {
+  try {
+    if (!this.estimateNumber) {
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      
+      // Get count of all estimates
+      const count = await mongoose.model('Estimate').countDocuments();
+      
+      this.estimateNumber = `EST-${year}${month}-${String(count + 1).padStart(4, '0')}`;
+      console.log('✅ Generated estimate number:', this.estimateNumber);
+    }
+    next();
+  } catch (error) {
+    console.error('❌ Error generating estimate number:', error);
+    next(error);
   }
-  next();
 });
+
+// Make estimateNumber required after we generate it
+estimateSchema.path('estimateNumber').required(true);
 
 module.exports = mongoose.model('Estimate', estimateSchema);

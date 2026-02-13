@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true,
     match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, // Simpler, more reliable email regex
       'Please provide a valid email'
     ]
   },
@@ -24,10 +24,6 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide a password'],
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
 }, {
   timestamps: true
@@ -37,14 +33,22 @@ const userSchema = new mongoose.Schema({
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw new Error(error);
+  }
 };
 
 module.exports = mongoose.model('User', userSchema);

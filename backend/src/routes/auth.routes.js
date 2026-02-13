@@ -1,11 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getMe } = require('../controllers/auth.controller');
+const authController = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth.middleware');
 const { validateRegister, validateLogin } = require('../middleware/validation.middleware');
 
-router.post('/register', validateRegister, register);
-router.post('/login', validateLogin, login);
-router.get('/me', protect, getMe);
+// Debug - log what's imported
+console.log('📦 Auth Controller exports:', Object.keys(authController));
+
+router.post('/register', validateRegister, authController.register);
+router.post('/login', validateLogin, authController.login);
+router.get('/me', protect, authController.getMe);
 
 module.exports = router;

@@ -5,8 +5,10 @@ const { calculateProjectCost } = require('../services/calculation.service');
 // @desc    Create new project
 // @route   POST /api/projects
 // @access  Private
-exports.createProject = async (req, res, next) => {
+const createProject = async (req, res, next) => {
   try {
+    console.log('📝 Creating project:', req.body);
+    
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -25,11 +27,14 @@ exports.createProject = async (req, res, next) => {
       ...costBreakdown
     });
 
+    console.log('✅ Project created:', project._id);
+
     res.status(201).json({
       success: true,
       data: project
     });
   } catch (error) {
+    console.error('❌ Create project error:', error);
     next(error);
   }
 };
@@ -37,14 +42,14 @@ exports.createProject = async (req, res, next) => {
 // @desc    Get all projects for user
 // @route   GET /api/projects
 // @access  Private
-exports.getProjects = async (req, res, next) => {
+const getProjects = async (req, res, next) => {
   try {
     const { page = 1, limit = 10 } = req.query;
     
     const projects = await Project.find({ user: req.user.userId })
       .sort('-createdAt')
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Project.countDocuments({ user: req.user.userId });
 
@@ -55,10 +60,11 @@ exports.getProjects = async (req, res, next) => {
         page: parseInt(page),
         limit: parseInt(limit),
         total,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / parseInt(limit))
       }
     });
   } catch (error) {
+    console.error('❌ Get projects error:', error);
     next(error);
   }
 };
@@ -66,7 +72,7 @@ exports.getProjects = async (req, res, next) => {
 // @desc    Get single project
 // @route   GET /api/projects/:id
 // @access  Private
-exports.getProject = async (req, res, next) => {
+const getProject = async (req, res, next) => {
   try {
     const project = await Project.findOne({
       _id: req.params.id,
@@ -85,6 +91,7 @@ exports.getProject = async (req, res, next) => {
       data: project
     });
   } catch (error) {
+    console.error('❌ Get project error:', error);
     next(error);
   }
 };
@@ -92,9 +99,8 @@ exports.getProject = async (req, res, next) => {
 // @desc    Update project
 // @route   PUT /api/projects/:id
 // @access  Private
-exports.updateProject = async (req, res, next) => {
+const updateProject = async (req, res, next) => {
   try {
-    // Recalculate costs if any cost-related fields are updated
     const costFields = ['laborCostPerHour', 'materialCost', 'equipmentCost', 'miscExpenses', 'duration', 'teamSize'];
     const shouldRecalculate = costFields.some(field => req.body[field] !== undefined);
 
@@ -133,6 +139,7 @@ exports.updateProject = async (req, res, next) => {
       data: project
     });
   } catch (error) {
+    console.error('❌ Update project error:', error);
     next(error);
   }
 };
@@ -140,7 +147,7 @@ exports.updateProject = async (req, res, next) => {
 // @desc    Delete project
 // @route   DELETE /api/projects/:id
 // @access  Private
-exports.deleteProject = async (req, res, next) => {
+const deleteProject = async (req, res, next) => {
   try {
     const project = await Project.findOneAndDelete({
       _id: req.params.id,
@@ -159,6 +166,7 @@ exports.deleteProject = async (req, res, next) => {
       message: 'Project deleted successfully'
     });
   } catch (error) {
+    console.error('❌ Delete project error:', error);
     next(error);
   }
 };
@@ -166,7 +174,7 @@ exports.deleteProject = async (req, res, next) => {
 // @desc    Get project statistics
 // @route   GET /api/projects/stats/summary
 // @access  Private
-exports.getProjectStats = async (req, res, next) => {
+const getProjectStats = async (req, res, next) => {
   try {
     const stats = await Project.aggregate([
       { $match: { user: req.user.userId } },
@@ -176,15 +184,11 @@ exports.getProjectStats = async (req, res, next) => {
           totalProjects: { $sum: 1 },
           averageCost: { $avg: '$totalCost' },
           totalCost: { $sum: '$totalCost' },
-          averageTeamSize: { $avg: '$teamSize' },
-          projectsByType: {
-            $push: '$projectType'
-          }
+          averageTeamSize: { $avg: '$teamSize' }
         }
       }
     ]);
 
-    // Get projects by type
     const projectsByType = await Project.aggregate([
       { $match: { user: req.user.userId } },
       {
@@ -204,6 +208,16 @@ exports.getProjectStats = async (req, res, next) => {
       }
     });
   } catch (error) {
+    console.error('❌ Get project stats error:', error);
     next(error);
   }
+};
+
+module.exports = {
+  createProject,
+  getProjects,
+  getProject,
+  updateProject,
+  deleteProject,
+  getProjectStats
 };
