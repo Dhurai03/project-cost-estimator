@@ -73,7 +73,7 @@ export const useProjects = () => {
       
       toast.success('Project created successfully!');
       
-      // Refresh data immediately
+      // Force immediate refresh
       await Promise.all([
         fetchProjects(pagination.page),
         fetchStats()
@@ -103,6 +103,7 @@ export const useProjects = () => {
     }
   };
 
+  // Initial fetch
   useEffect(() => {
     fetchProjects();
     fetchStats();

@@ -41,6 +41,11 @@ const Icons = {
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
     </svg>
+  ),
+  Chart: () => (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
   )
 };
 
@@ -72,13 +77,30 @@ const Dashboard = () => {
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  // Auto-refresh every 30 seconds
+  // Auto-refresh every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       refreshAllData();
-    }, 30000);
+    }, 10000);
     return () => clearInterval(interval);
   }, [refreshAllData]);
+
+  useEffect(() => {
+  console.log('📊 Dashboard mounted - fetching data...');
+  
+  const fetchData = async () => {
+    try {
+      await fetchProjectStats();
+      await fetchEstimateStats();
+      console.log('✅ Project stats:', projectsStats);
+      console.log('✅ Estimate stats:', estimatesStats);
+    } catch (error) {
+      console.error('❌ Error fetching stats:', error);
+    }
+  };
+  
+  fetchData();
+}, []);
 
   const recentEstimates = estimates?.slice(0, 4) || [];
 
@@ -94,6 +116,11 @@ const Dashboard = () => {
   const idleCost = totalProjectCost * 0.15;
   const unallocatedCost = totalProjectCost * 0.07;
   const efficiencyScore = totalProjectCost ? ((utilizedCost / totalProjectCost) * 100).toFixed(1) : 0;
+  
+  // Budget metrics
+  const budgetUsed = 47;
+  const budgetRemaining = 53;
+  const overspendPercentage = 1.76;
   
   // Get project type distribution from real data
   const projectTypes = projectsStats?.byType || [];
@@ -124,13 +151,10 @@ const Dashboard = () => {
           <div>
             <h1 className="text-2xl font-semibold text-white mb-1">Project Cost Explorer</h1>
             <p className="text-gray-400 text-sm">
-              Continuous Efficiency • Real-time Project Cost Tracking
+              Real-time Project Cost Tracking • Last updated: {lastUpdated.toLocaleTimeString()}
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="text-xs text-gray-500">
-              Last updated: {lastUpdated.toLocaleTimeString()}
-            </div>
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
@@ -205,15 +229,15 @@ const Dashboard = () => {
               <span>BUDGET UTILIZATION</span>
             </div>
             <div className="flex items-center justify-between mb-1">
-              <span className="text-2xl font-semibold text-amber-400">47%</span>
-              <span className="text-xs text-gray-400">1.76% overspend</span>
+              <span className="text-2xl font-semibold text-amber-400">{budgetUsed}%</span>
+              <span className="text-xs text-gray-400">{overspendPercentage}% overspend</span>
             </div>
             <div className="w-full bg-[#1E252E] h-1.5 rounded-full mt-2">
               <div className="w-[47%] bg-amber-500 h-1.5 rounded-full"></div>
             </div>
             <div className="flex justify-between mt-2">
-              <span className="text-xs text-gray-500">Used: 47%</span>
-              <span className="text-xs text-gray-500">Remaining: 53%</span>
+              <span className="text-xs text-gray-500">Used: {budgetUsed}%</span>
+              <span className="text-xs text-gray-500">Remaining: {budgetRemaining}%</span>
             </div>
           </div>
         </div>
@@ -225,7 +249,7 @@ const Dashboard = () => {
             <div className="bg-[#151A22] rounded-lg border border-[#2A313C] p-5">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="text-white font-medium text-sm flex items-center gap-2">
-                  <Icons.ProjectType />
+                  <Icons.Chart />
                   PROJECT COST BREAKDOWN
                 </h3>
                 <div className="flex items-center gap-4">
@@ -233,7 +257,7 @@ const Dashboard = () => {
                     EFFICIENCY: <span className="text-indigo-400 font-semibold">{totalProjects > 0 ? efficiencyScore : '0'}%</span>
                   </span>
                   <span className="text-xs text-gray-400">
-                    BUDGET: <span className="text-amber-400">47%</span> used
+                    BUDGET: <span className="text-amber-400">{budgetUsed}%</span> used
                   </span>
                 </div>
               </div>
@@ -278,7 +302,7 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Chart Area */}
+              {/* Chart Area - PROJECT COST TREND instead of Cloud Spend */}
               <div className="mt-6">
                 <CostBreakdownChart />
               </div>
@@ -393,12 +417,12 @@ const Dashboard = () => {
               </div>
               <p className="text-xs text-gray-400">
                 {totalProjects > 0 
-                  ? 'No budget alerts at this time' 
+                  ? 'All projects within budget limits' 
                   : 'Create projects to see budget alerts'}
               </p>
               <p className="text-xs text-gray-500 mt-2">
                 {totalProjects > 0 
-                  ? 'All projects within budget limits' 
+                  ? 'No budget alerts at this time' 
                   : 'No project data available'}
               </p>
             </div>
@@ -445,7 +469,7 @@ const Dashboard = () => {
         <div className="bg-[#151A22] rounded-lg border border-[#2A313C] p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-white font-medium text-sm flex items-center gap-2">
-              <Icons.ProjectType />
+              <Icons.Chart />
               PROJECT COST SUMMARY
             </h3>
             <span className="text-xs text-gray-400">

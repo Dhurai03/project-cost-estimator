@@ -71,7 +71,7 @@ export const useEstimates = () => {
       
       toast.success('Estimate created successfully!');
       
-      // Force refresh data immediately
+      // Force immediate refresh of both estimates and stats
       await Promise.all([
         fetchEstimates(pagination.page, ''),
         fetchStats()
@@ -122,6 +122,7 @@ export const useEstimates = () => {
     }
   };
 
+  // Initial fetch
   useEffect(() => {
     fetchEstimates();
     fetchStats();

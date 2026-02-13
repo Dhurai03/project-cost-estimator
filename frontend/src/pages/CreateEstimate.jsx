@@ -225,55 +225,55 @@ const CreateEstimate = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  if (!calculatedCost) {
+    toast.error('Please calculate the estimate first');
+    return;
+  }
+
+  setLoading(true);
+  
+  try {
+    console.log('📝 Creating project with data:', {
+      ...formData,
+      duration: parseFloat(formData.duration),
+      teamSize: parseFloat(formData.teamSize),
+      laborCostPerHour: parseFloat(formData.laborCostPerHour),
+      materialCost: parseFloat(formData.materialCost),
+      equipmentCost: parseFloat(formData.equipmentCost),
+      miscExpenses: parseFloat(formData.miscExpenses)
+    });
+
+    const project = await createProject({
+      ...formData,
+      duration: parseFloat(formData.duration),
+      teamSize: parseFloat(formData.teamSize),
+      laborCostPerHour: parseFloat(formData.laborCostPerHour),
+      materialCost: parseFloat(formData.materialCost),
+      equipmentCost: parseFloat(formData.equipmentCost),
+      miscExpenses: parseFloat(formData.miscExpenses)
+    });
+
+    console.log('✅ Project created:', project);
+
+    const estimate = await createEstimate(project._id, formData.notes);
     
-    if (!calculatedCost) {
-      toast.error('Please calculate the estimate first');
-      return;
-    }
-
-    setLoading(true);
+    console.log('✅ Estimate created:', estimate);
     
-    try {
-      console.log('📝 Creating project with data:', {
-        ...formData,
-        duration: parseFloat(formData.duration),
-        teamSize: parseFloat(formData.teamSize),
-        laborCostPerHour: parseFloat(formData.laborCostPerHour),
-        materialCost: parseFloat(formData.materialCost),
-        equipmentCost: parseFloat(formData.equipmentCost),
-        miscExpenses: parseFloat(formData.miscExpenses)
-      });
-
-      const project = await createProject({
-        ...formData,
-        duration: parseFloat(formData.duration),
-        teamSize: parseFloat(formData.teamSize),
-        laborCostPerHour: parseFloat(formData.laborCostPerHour),
-        materialCost: parseFloat(formData.materialCost),
-        equipmentCost: parseFloat(formData.equipmentCost),
-        miscExpenses: parseFloat(formData.miscExpenses)
-      });
-
-      console.log('✅ Project created:', project);
-
-      const estimate = await createEstimate(project._id, formData.notes);
-      
-      console.log('✅ Estimate created:', estimate);
-      
-      // ✅ TRIGGER DASHBOARD REFRESH
-      await refreshAllData();
-      
-      toast.success('Estimate created successfully!');
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('❌ Failed to create estimate:', error);
-      console.error('Error response:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Failed to create estimate');
-    } finally {
-      setLoading(false);
-    }
-  };
+    // ✅ CRITICAL: Force dashboard refresh
+    await refreshAllData();
+    
+    toast.success('Estimate created successfully!');
+    navigate('/dashboard');
+  } catch (error) {
+    console.error('❌ Failed to create estimate:', error);
+    console.error('Error response:', error.response?.data);
+    toast.error(error.response?.data?.message || 'Failed to create estimate');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#0B0F15]">

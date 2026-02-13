@@ -7,16 +7,7 @@ export const projectService = {
       const response = await api.get(`/projects?page=${page}&limit=${limit}`);
       return response.data;
     } catch (error) {
-      throw error;
-    }
-  },
-
-  // Get single project
-  getProject: async (id) => {
-    try {
-      const response = await api.get(`/projects/${id}`);
-      return response.data;
-    } catch (error) {
+      console.error('Error in getProjects:', error.response?.data || error.message);
       throw error;
     }
   },
@@ -27,36 +18,20 @@ export const projectService = {
       const response = await api.post('/projects', projectData);
       return response.data;
     } catch (error) {
+      console.error('Error in createProject:', error.response?.data || error.message);
       throw error;
     }
   },
 
-  // Update project
-  updateProject: async (id, projectData) => {
-    try {
-      const response = await api.put(`/projects/${id}`, projectData);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Delete project
-  deleteProject: async (id) => {
-    try {
-      const response = await api.delete(`/projects/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
-  },
-
-  // Get project statistics
+  // Get project statistics - CRITICAL FOR DASHBOARD
   getProjectStats: async () => {
     try {
+      console.log('📊 Fetching project stats from API...');
       const response = await api.get('/projects/stats/summary');
+      console.log('📊 Project stats response:', response.data);
       return response.data;
     } catch (error) {
+      console.error('Error in getProjectStats:', error.response?.data || error.message);
       throw error;
     }
   }
