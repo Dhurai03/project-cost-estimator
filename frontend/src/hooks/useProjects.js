@@ -11,14 +11,23 @@ export const useProjects = () => {
     total: 0,
     pages: 0
   });
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    summary: {
+      totalProjects: 0,
+      totalCost: 0,
+      averageCost: 0,
+      averageTeamSize: 0
+    },
+    byType: []
+  });
 
   const fetchProjects = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      console.log(`📁 Fetching projects - Page: ${page}`);
+      console.log('📁 Fetching projects - Page:', page);
       const response = await projectService.getProjects(page);
-      console.log('📁 Projects fetched:', response.data?.length || 0);
+      console.log('📁 Projects response:', response);
+      
       setProjects(response.data || []);
       setPagination(response.pagination || {
         page: 1,
@@ -36,10 +45,21 @@ export const useProjects = () => {
 
   const fetchStats = useCallback(async () => {
     try {
-      console.log('📁 Fetching project stats...');
+      console.log('📊 Fetching project stats...');
       const response = await projectService.getProjectStats();
-      console.log('📁 Stats fetched:', response.data);
-      setStats(response.data);
+      console.log('📊 Project stats response:', response);
+      
+      if (response.success && response.data) {
+        setStats({
+          summary: response.data.summary || {
+            totalProjects: 0,
+            totalCost: 0,
+            averageCost: 0,
+            averageTeamSize: 0
+          },
+          byType: response.data.byType || []
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch project stats:', error);
     }
@@ -53,7 +73,7 @@ export const useProjects = () => {
       
       toast.success('Project created successfully!');
       
-      // Force refresh data immediately
+      // Refresh data immediately
       await Promise.all([
         fetchProjects(pagination.page),
         fetchStats()
@@ -69,11 +89,9 @@ export const useProjects = () => {
 
   const deleteProject = async (id) => {
     try {
-      console.log('🗑️ Deleting project:', id);
       await projectService.deleteProject(id);
       toast.success('Project deleted successfully!');
       
-      // Force refresh data immediately
       await Promise.all([
         fetchProjects(pagination.page),
         fetchStats()
@@ -85,7 +103,6 @@ export const useProjects = () => {
     }
   };
 
-  // Initial fetch
   useEffect(() => {
     fetchProjects();
     fetchStats();

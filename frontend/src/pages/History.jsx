@@ -8,7 +8,8 @@ import toast from 'react-hot-toast';
 const History = () => {
   const [filter, setFilter] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const { formatCurrency } = useCurrency(); // ✅ ONLY DECLARE THIS ONCE!
+  const [deletingId, setDeletingId] = useState(null); // ✅ Track deleting state
+  const { formatCurrency } = useCurrency();
   const { 
     estimates, 
     loading, 
@@ -29,8 +30,21 @@ const History = () => {
   };
 
   const handleDelete = async (id) => {
+    // ✅ Prevent double delete
+    if (deletingId === id) return;
+    
     if (window.confirm('Are you sure you want to delete this estimate?')) {
-      await deleteEstimate(id);
+      setDeletingId(id);
+      try {
+        await deleteEstimate(id);
+        toast.success('Estimate deleted successfully!');
+        fetchEstimates(pagination.page, filter);
+      } catch (error) {
+        console.error('Delete error:', error);
+        toast.error('Failed to delete estimate');
+      } finally {
+        setDeletingId(null);
+      }
     }
   };
 
@@ -174,6 +188,7 @@ const History = () => {
                             onClick={() => exportPDF(estimate._id)}
                             className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-[#2A313C] rounded-md transition-all duration-200"
                             title="Export PDF"
+                            disabled={deletingId === estimate._id}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -183,6 +198,7 @@ const History = () => {
                             onClick={() => exportCSV(estimate._id)}
                             className="p-1.5 text-gray-500 hover:text-emerald-400 hover:bg-[#2A313C] rounded-md transition-all duration-200"
                             title="Export CSV"
+                            disabled={deletingId === estimate._id}
                           >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -190,12 +206,21 @@ const History = () => {
                           </button>
                           <button
                             onClick={() => handleDelete(estimate._id)}
-                            className="p-1.5 text-gray-500 hover:text-rose-400 hover:bg-[#2A313C] rounded-md transition-all duration-200"
+                            className={`p-1.5 rounded-md transition-all duration-200
+                              ${deletingId === estimate._id
+                                ? 'text-gray-600 cursor-not-allowed'
+                                : 'text-gray-500 hover:text-rose-400 hover:bg-[#2A313C]'
+                              }`}
                             title="Delete"
+                            disabled={deletingId === estimate._id}
                           >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                            {deletingId === estimate._id ? (
+                              <div className="w-5 h-5 border-2 border-gray-500 border-t-rose-400 rounded-full animate-spin"></div>
+                            ) : (
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            )}
                           </button>
                         </div>
                       </td>

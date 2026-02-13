@@ -11,14 +11,22 @@ export const useEstimates = () => {
     total: 0,
     pages: 0
   });
-  const [stats, setStats] = useState(null);
+  const [stats, setStats] = useState({
+    summary: {
+      totalEstimates: 0,
+      totalCost: 0,
+      averageCost: 0
+    },
+    byStatus: []
+  });
 
   const fetchEstimates = useCallback(async (page = 1, status = '') => {
     setLoading(true);
     try {
       console.log(`📊 Fetching estimates - Page: ${page}, Status: ${status || 'All'}`);
       const response = await estimateService.getEstimates(page, 10, status);
-      console.log('📊 Estimates fetched:', response.data?.length || 0);
+      console.log('📊 Estimates response:', response);
+      
       setEstimates(response.data || []);
       setPagination(response.pagination || {
         page: 1,
@@ -38,8 +46,18 @@ export const useEstimates = () => {
     try {
       console.log('📊 Fetching estimate stats...');
       const response = await estimateService.getEstimateStats();
-      console.log('📊 Stats fetched:', response.data);
-      setStats(response.data);
+      console.log('📊 Estimate stats response:', response);
+      
+      if (response.success && response.data) {
+        setStats({
+          summary: response.data.summary || {
+            totalEstimates: 0,
+            totalCost: 0,
+            averageCost: 0
+          },
+          byStatus: response.data.byStatus || []
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch estimate stats:', error);
     }
@@ -73,7 +91,6 @@ export const useEstimates = () => {
       await estimateService.deleteEstimate(id);
       toast.success('Estimate deleted successfully!');
       
-      // Force refresh data immediately
       await Promise.all([
         fetchEstimates(pagination.page, ''),
         fetchStats()
@@ -105,7 +122,6 @@ export const useEstimates = () => {
     }
   };
 
-  // Initial fetch
   useEffect(() => {
     fetchEstimates();
     fetchStats();
