@@ -40,34 +40,36 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor - handle 401 errors
+// Response interceptor - handle errors gracefully
 api.interceptors.response.use(
   (response) => {
-    console.log(`✅ ${response.config.method.toUpperCase()} ${response.config.url} - ${response.status}`);
     return response;
   },
   (error) => {
     if (error.response) {
-      console.error(`❌ ${error.config?.method?.toUpperCase()} ${error.config?.url} - ${error.response.status}`);
-      
-      // Handle 401 Unauthorized
-      if (error.response.status === 401) {
-        console.log('🔒 401 Unauthorized - redirecting to login');
-        localStorage.removeItem('token');
-        delete api.defaults.headers.Authorization;
-        
-        // Only redirect if not on login page
-        if (!window.location.pathname.includes('/login') && 
-            !window.location.pathname.includes('/register')) {
-          window.location.href = '/login';
+      const { status, config } = error.response;
+
+      // Handle 401 Unauthorized - but ONLY redirect if it's the /auth/me route
+      // Background stat/data calls should fail silently
+      if (status === 401) {
+        const isAuthCheck = config?.url?.includes('/auth/me');
+        if (isAuthCheck) {
+          console.log('🔒 Auth check failed - clearing session');
+          localStorage.removeItem('token');
+          delete api.defaults.headers.Authorization;
+          if (!window.location.pathname.includes('/login') &&
+              !window.location.pathname.includes('/register')) {
+            window.location.href = '/login';
+          }
         }
+        // For other 401s (background data fetches), just reject silently
       }
     } else if (error.code === 'ECONNABORTED') {
       console.error('⏰ Request timeout');
     } else {
       console.error('⚙️ Network error:', error.message);
     }
-    
+
     return Promise.reject(error);
   }
 );

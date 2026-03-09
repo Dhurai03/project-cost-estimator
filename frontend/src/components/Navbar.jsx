@@ -10,38 +10,40 @@ const Navbar = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'Cost Explorer', icon: '📊' },
-    { path: '/create-estimate', label: 'New Estimate', icon: '➕' },
-    { path: '/history', label: 'History', icon: '📋' },
+    { path: '/fpa', label: 'Function Point Analysis', icon: '📐' },
+    { path: '/analogy', label: 'Analogy Estimation', icon: '🔍' },
     { path: '/cocomo', label: 'COCOMO II', icon: '📈' },
+    { path: '/history', label: 'History', icon: '📋' },
   ];
 
   return (
     <nav className="sticky top-0 z-50 bg-[#0B0F15] light-theme:bg-white border-b border-[#2A313C] light-theme:border-gray-200">
       <div className="container-custom">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <span className="text-white light-theme:text-gray-900 text-lg font-semibold">
-              ProjectCostPro
-            </span>
-          </Link>
+          {/* Left Section: Logo & Desktop Navigation */}
+          <div className="flex items-center gap-8">
+            <Link to="/dashboard" className="flex items-center gap-2">
+              <span className="text-white light-theme:text-gray-900 text-lg font-semibold">
+                ProjectCostPro
+              </span>
+            </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
-                  ${location.pathname === item.path
-                    ? 'bg-[#1E252E] light-theme:bg-gray-100 text-white light-theme:text-gray-900'
-                    : 'text-gray-400 light-theme:text-gray-600 hover:text-white light-theme:hover:text-gray-900 hover:bg-[#1E252E] light-theme:hover:bg-gray-100'
-                  }`}
-              >
-                <span className="mr-2">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
+            <div className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
+                    ${location.pathname === item.path
+                      ? 'bg-[#1E252E] light-theme:bg-gray-100 text-white light-theme:text-gray-900'
+                      : 'text-gray-400 light-theme:text-gray-600 hover:text-white light-theme:hover:text-gray-900 hover:bg-[#1E252E] light-theme:hover:bg-gray-100'
+                    }`}
+                >
+                  <span className="mr-2">{item.icon}</span>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
 
           {/* Right Section */}

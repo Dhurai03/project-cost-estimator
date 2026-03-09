@@ -17,6 +17,9 @@ router.route('/')
 // Stats route
 router.get('/stats/summary', cocomoController.getCocomoStats);
 
+// Export route
+router.get('/:id/export/pdf', cocomoController.exportCocomoPDF);
+
 // Individual analysis routes
 router.route('/:id')
   .get(cocomoController.getCocomoAnalysis)

@@ -191,8 +191,8 @@ const CocomoAnalysis = () => {
       finalResults = calculateCocomo();
     }
 
-    if (!formData.projectId) {
-      toast.error('Please select a project');
+    if (!formData.projectName?.trim()) {
+      toast.error('Please enter or select a project name');
       return;
     }
 
@@ -202,18 +202,38 @@ const CocomoAnalysis = () => {
     }
 
     setLoading(true);
+    let finalProjectId = null;
     try {
-      // Find selected project
-      const selectedProject = projects.find(p => p._id === formData.projectId);
+      // Find existing project by name
+      const existingProject = projects.find(p => p.name.toLowerCase() === formData.projectName.trim().toLowerCase());
+      
+      if (existingProject) {
+        finalProjectId = existingProject._id;
+      } else {
+        // Create new project implicitly
+        const newProjectData = {
+          name: formData.projectName.trim(),
+          duration: 1,
+          projectType: 'Software',
+          teamSize: 1,
+          complexityLevel: 'Medium',
+          laborCostPerHour: formData.laborRatePerMonth / 160 || 50,
+          materialCost: 0,
+          equipmentCost: 0,
+          miscExpenses: 0
+        };
+        const res = await api.post('/projects', newProjectData);
+        finalProjectId = res.data.data._id;
+      }
       
       // Create COCOMO project data
       const cocomoData = {
         id: Date.now().toString(),
-        name: selectedProject?.name || `COCOMO Project`,
-        projectId: formData.projectId,
+        name: formData.projectName.trim() || `COCOMO Project`,
+        projectId: finalProjectId,
         modelType: formData.modelType,
-        size: formData.sizeKloc,
-        laborRate: formData.laborRatePerMonth,
+        sizeKloc: formData.sizeKloc,
+        laborRatePerMonth: formData.laborRatePerMonth,
         scaleFactors: formData.scaleFactors,
         costDrivers: formData.costDrivers,
         effort: finalResults.effort,
@@ -229,14 +249,10 @@ const CocomoAnalysis = () => {
       // Add to COCOMO context (this will update the dashboard in real-time)
       addCocomoProject(cocomoData);
 
-      // Try to save to API if endpoint exists
-      try {
-        await api.post('/cocomo', cocomoData);
-      } catch (apiError) {
-        console.log('API not available, saved locally only');
-      }
+      // Save to API
+      await api.post('/cocomo', cocomoData);
 
-      toast.success('COCOMO analysis created and dashboard updated!');
+      toast.success('COCOMO analysis created and saved to history!');
       
       // Navigate back to dashboard to see the updated data
       setTimeout(() => {
@@ -295,27 +311,20 @@ const CocomoAnalysis = () => {
             
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Project</label>
-                <select
-                  value={formData.projectId}
-                  onChange={(e) => {
-                    const selected = projects.find(p => p._id === e.target.value);
-                    setFormData({
-                      ...formData, 
-                      projectId: e.target.value,
-                      projectName: selected?.name || ''
-                    });
-                  }}
+                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Project Name</label>
+                <input
+                  type="text"
+                  list="cocomo-project-list"
+                  placeholder="Select or type a new project..."
+                  value={formData.projectName || ''}
+                  onChange={(e) => setFormData({...formData, projectName: e.target.value})}
                   className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
-                  disabled={loadingProjects}
-                >
-                  <option value="">Select a project...</option>
-                  {projects.map(project => (
-                    <option key={project._id} value={project._id}>
-                      {project.name}
-                    </option>
+                />
+                <datalist id="cocomo-project-list">
+                  {projects.map(p => (
+                    <option key={p._id} value={p.name} />
                   ))}
-                </select>
+                </datalist>
                 {loadingProjects && <p className="text-xs text-gray-500 mt-1">Loading projects...</p>}
               </div>
               

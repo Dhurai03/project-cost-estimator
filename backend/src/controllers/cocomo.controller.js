@@ -253,3 +253,33 @@ exports.getCocomoStats = async (req, res, next) => {
     next(error);
   }
 };
+
+// @desc    Export COCOMO analysis as PDF
+// @route   GET /api/cocomo/:id/export/pdf
+// @access  Private
+exports.exportCocomoPDF = async (req, res, next) => {
+  try {
+    const { generateCocomoPDF } = require('../services/pdf.service');
+    const analysis = await Cocomo.findOne({
+      _id: req.params.id,
+      user: req.user.userId
+    }).populate('project', 'name projectType');
+
+    if (!analysis) {
+      return res.status(404).json({
+        success: false,
+        message: 'COCOMO analysis not found'
+      });
+    }
+
+    const pdfBuffer = await generateCocomoPDF(analysis);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=cocomo-analysis-${analysis._id.toString().slice(-6)}.pdf`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Export COCOMO PDF error:', error);
+    next(error);
+  }
+};

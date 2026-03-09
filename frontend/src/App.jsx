@@ -12,7 +12,8 @@ import CocomoAnalysis from './pages/CocomoAnalysis';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
-import CreateEstimate from './pages/CreateEstimate';
+import FunctionPointAnalysis from './pages/FunctionPointAnalysis';
+import AnalogyEstimation from './pages/AnalogyEstimation';
 import History from './pages/History';
 
 function App() {
@@ -44,11 +45,32 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-                <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-                <Route path="/create-estimate" element={<PrivateRoute><CreateEstimate /></PrivateRoute>} />
-                <Route path="/history" element={<PrivateRoute><History /></PrivateRoute>} />
-                <Route path="/cocomo" element={<PrivateRoute><CocomoAnalysis /></PrivateRoute>} />
-                <Route path="*" element={<Navigate to="/" />} />
+                <Route path="/dashboard" element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                } />
+                <Route path="/fpa" element={
+                  <PrivateRoute>
+                    <FunctionPointAnalysis />
+                  </PrivateRoute>
+                } />
+                <Route path="/analogy" element={
+                  <PrivateRoute>
+                    <AnalogyEstimation />
+                  </PrivateRoute>
+                } />
+                <Route path="/cocomo" element={
+                  <PrivateRoute>
+                    <CocomoAnalysis />
+                  </PrivateRoute>
+                } />
+                <Route path="/history" element={
+                  <PrivateRoute>
+                    <History />
+                  </PrivateRoute>
+                } />
+                <Route path="*" element={<Navigate to="/dashboard" />} />
               </Routes>
             </CocomoProvider>
           </ThemeProvider>

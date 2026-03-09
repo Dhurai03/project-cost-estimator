@@ -15,13 +15,12 @@ const CustomTooltip = ({ active, payload }) => {
   return null;
 };
 
-const CostBreakdownChart = () => {
-  const { estimates } = useEstimates();
+const CostBreakdownChart = ({ data = [] }) => {
   const [chartData, setChartData] = useState([]);
 
   // Generate real-time chart data from estimates
   useEffect(() => {
-    if (estimates && estimates.length > 0) {
+    if (data && data.length > 0) {
       // Get last 7 days of data
       const last7Days = [];
       const today = new Date();
@@ -34,7 +33,7 @@ const CostBreakdownChart = () => {
         const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         
         // Calculate total cost for this day
-        const dayTotal = estimates
+        const dayTotal = data
           .filter(est => {
             const estDate = new Date(est.createdAt);
             return estDate.toDateString() === date.toDateString();
@@ -64,7 +63,7 @@ const CostBreakdownChart = () => {
         { name: 'Apr 15', value: 0 }
       ]);
     }
-  }, [estimates]);
+  }, [data]);
 
   const maxValue = Math.max(...chartData.map(d => d.value), 1000);
   const yAxisMax = Math.ceil(maxValue * 1.1 / 1000) * 1000;
