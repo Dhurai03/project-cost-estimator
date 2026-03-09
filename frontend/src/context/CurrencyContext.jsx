@@ -43,8 +43,7 @@ export const CurrencyProvider = ({ children }) => {
 
   const convertAmount = (amount) => {
     if (!amount) return 0;
-    const rate = exchangeRates[currency] || 1;
-    return amount * rate;
+    return amount;
   };
 
   const formatCurrency = (amount) => {

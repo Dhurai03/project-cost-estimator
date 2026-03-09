@@ -5,6 +5,7 @@ import { useProjects } from '../hooks/useProjects';
 import { useEstimates } from '../hooks/useEstimates';
 import { useCurrency } from '../context/CurrencyContext';
 import { useData } from '../context/DataContext';
+import { validateProjectForm } from '../utils/validators';
 import toast from 'react-hot-toast';
 
 // Heroicons as components
@@ -142,8 +143,10 @@ const CreateEstimate = () => {
 
   const [loading, setLoading] = useState(false);
   const [calculatedCost, setCalculatedCost] = useState(null);
+  const [riskPercentage, setRiskPercentage] = useState(10); // Default 10%
+  const [gstPercentage, setGstPercentage] = useState(18);   // Default 18%
+  const [showDetailed, setShowDetailed] = useState(false);
 
-  // ✅ FIXED: handleChange function was missing
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -151,7 +154,6 @@ const CreateEstimate = () => {
     });
   };
 
-  // ✅ FIXED: calculateEstimate function was missing
   const calculateEstimate = () => {
     const requiredFields = [
       'name', 'duration', 'projectType', 'teamSize', 
@@ -173,7 +175,10 @@ const CreateEstimate = () => {
     const equipmentCost = parseFloat(formData.equipmentCost);
     const miscExpenses = parseFloat(formData.miscExpenses);
     
+    // Use 160 hours per month to match backend
     const WORK_HOURS_PER_MONTH = 160;
+    
+    // 1️⃣ LABOR COST CALCULATION
     const totalWorkHours = duration * WORK_HOURS_PER_MONTH;
     const baseLaborCost = teamSize * totalWorkHours * laborCostPerHour;
     
@@ -185,6 +190,7 @@ const CreateEstimate = () => {
     
     const laborCost = baseLaborCost * complexityMultiplier;
     
+    // 2️⃣ PROJECT TYPE MULTIPLIER
     const projectTypeMultiplier = {
       'Software': 1.0,
       'Construction': 1.3,
@@ -195,110 +201,169 @@ const CreateEstimate = () => {
     const adjustedMaterialCost = materialCost * projectTypeMultiplier;
     const adjustedEquipmentCost = equipmentCost * projectTypeMultiplier;
     const adjustedMiscCost = miscExpenses * projectTypeMultiplier;
-    
-    const totalCost = laborCost + adjustedMaterialCost + adjustedEquipmentCost + adjustedMiscCost;
 
-    console.log('✅ Calculation:', {
-      duration,
-      teamSize,
-      laborCostPerHour,
-      totalWorkHours,
-      baseLaborCost,
-      complexityMultiplier,
-      laborCost,
-      projectTypeMultiplier,
-      adjustedMaterialCost,
-      adjustedEquipmentCost,
-      adjustedMiscCost,
-      totalCost
+    // 3️⃣ BASE TOTAL (without contingency/tax)
+    const baseTotal = laborCost + adjustedMaterialCost + 
+                      adjustedEquipmentCost + adjustedMiscCost;
+
+    // 4️⃣ CONTINGENCY (Risk Buffer) - Frontend only
+    const contingencyAmount = (baseTotal * riskPercentage) / 100;
+
+    // 5️⃣ TAX CALCULATION - Frontend only
+    const taxableAmount = baseTotal + contingencyAmount;
+    const taxAmount = (taxableAmount * gstPercentage) / 100;
+
+    // 6️⃣ FINAL TOTAL - Frontend only
+    const finalTotal = taxableAmount + taxAmount;
+
+    console.log('✅ Enhanced Calculation:', {
+      labor: { base: baseLaborCost, final: laborCost, hours: totalWorkHours },
+      material: adjustedMaterialCost,
+      equipment: adjustedEquipmentCost,
+      misc: adjustedMiscCost,
+      baseTotal,
+      contingency: { percentage: riskPercentage, amount: contingencyAmount },
+      tax: { percentage: gstPercentage, amount: taxAmount },
+      finalTotal
     });
 
     setCalculatedCost({
-      laborCost,
-      materialCost: adjustedMaterialCost,
-      equipmentCost: adjustedEquipmentCost,
-      miscCost: adjustedMiscCost,
-      totalCost
+      // Store both base and enhanced values
+      base: {
+        laborCost,
+        materialCost: adjustedMaterialCost,
+        equipmentCost: adjustedEquipmentCost,
+        miscCost: adjustedMiscCost,
+        totalCost: baseTotal
+      },
+      enhanced: {
+        labor: {
+          base: baseLaborCost,
+          final: laborCost,
+          hours: totalWorkHours,
+          rate: laborCostPerHour,
+          multiplier: complexityMultiplier
+        },
+        material: {
+          base: materialCost,
+          final: adjustedMaterialCost,
+          multiplier: projectTypeMultiplier
+        },
+        equipment: {
+          base: equipmentCost,
+          final: adjustedEquipmentCost,
+          multiplier: projectTypeMultiplier
+        },
+        misc: {
+          base: miscExpenses,
+          final: adjustedMiscCost,
+          multiplier: projectTypeMultiplier
+        },
+        baseTotal,
+        contingency: {
+          percentage: riskPercentage,
+          amount: contingencyAmount
+        },
+        tax: {
+          percentage: gstPercentage,
+          amount: taxAmount
+        },
+        finalTotal
+      }
     });
     
     toast.success('Estimate calculated successfully!');
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!calculatedCost) {
-    toast.error('Please calculate the estimate first');
-    return;
-  }
-
-  setLoading(true);
-  
-  try {
-    console.log('📝 Creating project with data:', {
-      ...formData,
-      duration: parseFloat(formData.duration),
-      teamSize: parseFloat(formData.teamSize),
-      laborCostPerHour: parseFloat(formData.laborCostPerHour),
-      materialCost: parseFloat(formData.materialCost),
-      equipmentCost: parseFloat(formData.equipmentCost),
-      miscExpenses: parseFloat(formData.miscExpenses)
-    });
-
-    const project = await createProject({
-      ...formData,
-      duration: parseFloat(formData.duration),
-      teamSize: parseFloat(formData.teamSize),
-      laborCostPerHour: parseFloat(formData.laborCostPerHour),
-      materialCost: parseFloat(formData.materialCost),
-      equipmentCost: parseFloat(formData.equipmentCost),
-      miscExpenses: parseFloat(formData.miscExpenses)
-    });
-
-    console.log('✅ Project created:', project);
-
-    const estimate = await createEstimate(project._id, formData.notes);
+    e.preventDefault();
     
-    console.log('✅ Estimate created:', estimate);
+    if (!calculatedCost) {
+      toast.error('Please calculate the estimate first');
+      return;
+    }
+
+    const { isValid, errors } = validateProjectForm(formData);
+    if (!isValid) {
+      Object.values(errors).forEach(error => toast.error(error));
+      return;
+    }
+
+    setLoading(true);
     
-    // ✅ CRITICAL: Force dashboard refresh
-    await refreshAllData();
-    
-    toast.success('Estimate created successfully!');
-    navigate('/dashboard');
-  } catch (error) {
-    console.error('❌ Failed to create estimate:', error);
-    console.error('Error response:', error.response?.data);
-    toast.error(error.response?.data?.message || 'Failed to create estimate');
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      // Send ONLY the base project data - backend will calculate costs
+      const projectData = {
+        name: formData.name,
+        duration: parseFloat(formData.duration),
+        projectType: formData.projectType,
+        teamSize: parseFloat(formData.teamSize),
+        complexityLevel: formData.complexityLevel,
+        laborCostPerHour: parseFloat(formData.laborCostPerHour),
+        materialCost: parseFloat(formData.materialCost),
+        equipmentCost: parseFloat(formData.equipmentCost),
+        miscExpenses: parseFloat(formData.miscExpenses)
+      };
+
+      console.log('📦 Sending project data:', projectData);
+
+      const project = await createProject(projectData);
+      console.log('✅ Project created:', project);
+
+      const projectId = project._id || project.data?._id;
+      
+      if (!projectId) {
+        throw new Error('Project ID not found in response');
+      }
+
+      const estimate = await createEstimate(projectId, formData.notes);
+      console.log('✅ Estimate created:', estimate);
+      
+      await refreshAllData();
+      toast.success('Estimate created successfully!');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('❌ Failed to create estimate:', error);
+      console.error('Error response:', error.response?.data);
+      
+      if (error.response?.data?.errors) {
+        error.response.data.errors.forEach(err => {
+          toast.error(`${err.msg || err.message}`);
+        });
+      } else if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to create estimate');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#0B0F15]">
+    <div className="min-h-screen bg-[#0B0F15] light-theme:bg-gray-50">
       <Navbar />
       
       <div className="container-custom py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-white mb-2">Create New Estimate</h1>
-            <p className="text-gray-400 text-sm">Fill in the project details to generate a cost estimate.</p>
+            <h1 className="text-2xl font-semibold text-white light-theme:text-gray-900 mb-2">Create New Estimate</h1>
+            <p className="text-gray-400 light-theme:text-gray-600 text-sm">Fill in the project details to generate a cost estimate.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Project Information */}
-            <div className="bg-[#151A22] rounded-lg border border-[#2A313C] p-6">
+            <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
               <div className="flex items-center gap-2 mb-5">
                 <Icons.ProjectName />
-                <h2 className="text-white font-medium text-sm">Project Information</h2>
+                <h2 className="text-white light-theme:text-gray-900 font-medium text-sm">Project Information</h2>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Project Name */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Project Name
                   </label>
                   <div className="relative">
@@ -310,8 +375,8 @@ const CreateEstimate = () => {
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] border border-[#2A313C] rounded-md 
-                               text-white text-sm placeholder-gray-500
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
                                focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
                                outline-none transition-all duration-200"
                       placeholder="e.g., E-commerce Platform"
@@ -322,7 +387,7 @@ const CreateEstimate = () => {
                 
                 {/* Duration */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Duration (months)
                   </label>
                   <div className="relative">
@@ -334,8 +399,8 @@ const CreateEstimate = () => {
                       name="duration"
                       value={formData.duration}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] border border-[#2A313C] rounded-md 
-                               text-white text-sm placeholder-gray-500
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
                                focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
                                outline-none transition-all duration-200"
                       placeholder="e.g., 6"
@@ -347,7 +412,7 @@ const CreateEstimate = () => {
                 
                 {/* Project Type */}
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Project Type
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -359,7 +424,7 @@ const CreateEstimate = () => {
                         className={`p-3 rounded-lg border transition-all duration-200 flex flex-col items-center gap-1
                           ${formData.projectType === type.value
                             ? 'bg-indigo-600 border-indigo-600 text-white'
-                            : 'bg-[#1E252E] border-[#2A313C] text-gray-400 hover:border-indigo-500 hover:text-white'
+                            : 'bg-[#1E252E] light-theme:bg-white border-[#2A313C] light-theme:border-gray-200 text-gray-400 light-theme:text-gray-600 hover:border-indigo-500 hover:text-white light-theme:text-gray-900'
                           }`}
                       >
                         <span className="w-6 h-6">{type.icon}</span>
@@ -371,7 +436,7 @@ const CreateEstimate = () => {
                 
                 {/* Team Size */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Team Size
                   </label>
                   <div className="relative">
@@ -383,8 +448,8 @@ const CreateEstimate = () => {
                       name="teamSize"
                       value={formData.teamSize}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] border border-[#2A313C] rounded-md 
-                               text-white text-sm placeholder-gray-500
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
                                focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
                                outline-none transition-all duration-200"
                       placeholder="e.g., 5"
@@ -396,7 +461,7 @@ const CreateEstimate = () => {
                 
                 {/* Complexity Level */}
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Complexity Level
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -408,7 +473,7 @@ const CreateEstimate = () => {
                         className={`p-3 rounded-lg border transition-all duration-200 flex flex-col items-center gap-1
                           ${formData.complexityLevel === level.value
                             ? 'bg-indigo-600 border-indigo-600 text-white'
-                            : 'bg-[#1E252E] border-[#2A313C] text-gray-400 hover:border-indigo-500 hover:text-white'
+                            : 'bg-[#1E252E] light-theme:bg-white border-[#2A313C] light-theme:border-gray-200 text-gray-400 light-theme:text-gray-600 hover:border-indigo-500 hover:text-white light-theme:text-gray-900'
                           }`}
                       >
                         <span className="w-6 h-6">{level.icon}</span>
@@ -421,15 +486,15 @@ const CreateEstimate = () => {
             </div>
 
             {/* Cost Inputs */}
-            <div className="bg-[#151A22] rounded-lg border border-[#2A313C] p-6">
+            <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
               <div className="flex items-center gap-2 mb-5">
                 <Icons.Calculate />
-                <h2 className="text-white font-medium text-sm">Cost Inputs</h2>
+                <h2 className="text-white light-theme:text-gray-900 font-medium text-sm">Cost Inputs</h2>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Labor Cost / Hour
                   </label>
                   <div className="relative">
@@ -441,8 +506,8 @@ const CreateEstimate = () => {
                       name="laborCostPerHour"
                       value={formData.laborCostPerHour}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] border border-[#2A313C] rounded-md 
-                               text-white text-sm placeholder-gray-500
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
                                focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
                                outline-none transition-all duration-200"
                       placeholder="e.g., 50"
@@ -454,7 +519,7 @@ const CreateEstimate = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Material Cost
                   </label>
                   <div className="relative">
@@ -466,8 +531,8 @@ const CreateEstimate = () => {
                       name="materialCost"
                       value={formData.materialCost}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] border border-[#2A313C] rounded-md 
-                               text-white text-sm placeholder-gray-500
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
                                focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
                                outline-none transition-all duration-200"
                       placeholder="e.g., 10000"
@@ -479,7 +544,7 @@ const CreateEstimate = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Equipment Cost
                   </label>
                   <div className="relative">
@@ -491,8 +556,8 @@ const CreateEstimate = () => {
                       name="equipmentCost"
                       value={formData.equipmentCost}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] border border-[#2A313C] rounded-md 
-                               text-white text-sm placeholder-gray-500
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
                                focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
                                outline-none transition-all duration-200"
                       placeholder="e.g., 5000"
@@ -504,7 +569,7 @@ const CreateEstimate = () => {
                 </div>
                 
                 <div>
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Miscellaneous
                   </label>
                   <div className="relative">
@@ -516,8 +581,8 @@ const CreateEstimate = () => {
                       name="miscExpenses"
                       value={formData.miscExpenses}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] border border-[#2A313C] rounded-md 
-                               text-white text-sm placeholder-gray-500
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
                                focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
                                outline-none transition-all duration-200"
                       placeholder="e.g., 2000"
@@ -528,72 +593,265 @@ const CreateEstimate = () => {
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="mt-6 flex justify-end">
-                <button
-                  type="button"
-                  onClick={calculateEstimate}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 
-                           text-white text-sm font-medium rounded-md
-                           transition-all duration-200 flex items-center gap-2
-                           focus:ring-4 focus:ring-indigo-600/20 focus:outline-none"
-                >
-                  <Icons.Calculate />
-                  Calculate Estimate
-                </button>
+            {/* Professional Settings */}
+            <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <svg className="w-5 h-5 text-gray-400 light-theme:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                <h2 className="text-white light-theme:text-gray-900 font-medium text-sm">Professional Settings</h2>
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Risk/Contingency Percentage */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
+                    Risk/Contingency (%) <span className="text-gray-500">(Default: 10%)</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">⚠️</span>
+                    <input
+                      type="number"
+                      value={riskPercentage}
+                      onChange={(e) => setRiskPercentage(parseFloat(e.target.value) || 0)}
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
+                               focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
+                               outline-none transition-all duration-200"
+                      placeholder="e.g., 10"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Adds buffer for unexpected costs</p>
+                </div>
+
+                {/* GST/Tax Percentage */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
+                    GST/Tax (%) <span className="text-gray-500">(Default: 18%)</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">💰</span>
+                    <input
+                      type="number"
+                      value={gstPercentage}
+                      onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)}
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
+                               focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
+                               outline-none transition-all duration-200"
+                      placeholder="e.g., 18"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Applicable tax rate</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Calculate Button */}
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={calculateEstimate}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 
+                         text-white text-sm font-medium rounded-md
+                         transition-all duration-200 flex items-center gap-2
+                         focus:ring-4 focus:ring-indigo-600/20 focus:outline-none"
+              >
+                <Icons.Calculate />
+                Calculate Estimate
+              </button>
             </div>
 
             {/* Cost Breakdown */}
             {calculatedCost && (
-              <div className="bg-[#151A22] rounded-lg border border-[#2A313C] p-6">
+              <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
                 <div className="flex items-center gap-2 mb-5">
                   <Icons.Calculate />
-                  <h2 className="text-white font-medium text-sm">Cost Breakdown</h2>
+                  <h2 className="text-white light-theme:text-gray-900 font-medium text-sm">Cost Breakdown</h2>
+                  <button
+                    onClick={() => setShowDetailed(!showDetailed)}
+                    className="ml-auto text-xs text-indigo-400 hover:text-indigo-300"
+                  >
+                    {showDetailed ? 'Show Summary' : 'Show Details'}
+                  </button>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-[#1E252E] rounded-md border border-[#2A313C]">
-                      <span className="text-xs text-gray-400">Labor Cost:</span>
-                      <span className="text-xs font-semibold text-indigo-400">
-                        {formatCurrency(calculatedCost.laborCost)}
-                      </span>
+                {showDetailed ? (
+                  // DETAILED VIEW - Using enhanced data
+                  <div className="space-y-4">
+                    {/* Labor Details */}
+                    <div className="bg-[#1E252E] light-theme:bg-white rounded-lg p-4">
+                      <h3 className="text-white light-theme:text-gray-900 text-xs font-semibold mb-3 flex items-center gap-2">
+                        <span>👥</span> Labor Cost Breakdown
+                      </h3>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Hours per month:</span>
+                          <span className="text-white light-theme:text-gray-900">{calculatedCost.enhanced.labor.hours} hrs</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Team size:</span>
+                          <span className="text-white light-theme:text-gray-900">{formData.teamSize} people</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Rate per hour:</span>
+                          <span className="text-white light-theme:text-gray-900">{formatCurrency(calculatedCost.enhanced.labor.rate)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Base labor cost:</span>
+                          <span className="text-white light-theme:text-gray-900">{formatCurrency(calculatedCost.enhanced.labor.base)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Complexity multiplier:</span>
+                          <span className="text-indigo-400">{calculatedCost.enhanced.labor.multiplier}x</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-700">
+                          <span className="text-gray-300 light-theme:text-gray-700 font-medium">Final labor cost:</span>
+                          <span className="text-indigo-400 font-semibold">{formatCurrency(calculatedCost.enhanced.labor.final)}</span>
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div className="flex justify-between items-center p-3 bg-[#1E252E] rounded-md border border-[#2A313C]">
-                      <span className="text-xs text-gray-400">Material Cost:</span>
-                      <span className="text-xs font-semibold text-indigo-400">
-                        {formatCurrency(calculatedCost.materialCost)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center p-3 bg-[#1E252E] rounded-md border border-[#2A313C]">
-                      <span className="text-xs text-gray-400">Equipment Cost:</span>
-                      <span className="text-xs font-semibold text-indigo-400">
-                        {formatCurrency(calculatedCost.equipmentCost)}
-                      </span>
-                    </div>
-                    
-                    <div className="flex justify-between items-center p-3 bg-[#1E252E] rounded-md border border-[#2A313C]">
-                      <span className="text-xs text-gray-400">Misc Cost:</span>
-                      <span className="text-xs font-semibold text-indigo-400">
-                        {formatCurrency(calculatedCost.miscCost)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-[#1E252E] rounded-lg p-5 flex flex-col justify-center items-center border border-indigo-500/30">
-                    <span className="text-xs text-gray-400 mb-1">Total Estimated Cost</span>
-                    <span className="text-2xl font-bold text-indigo-400 mb-1">
-                      {formatCurrency(calculatedCost.totalCost)}
-                    </span>
-                    <span className="text-xs text-gray-500">including all costs</span>
-                  </div>
-                </div>
 
+                    {/* Material Details */}
+                    <div className="bg-[#1E252E] light-theme:bg-white rounded-lg p-4">
+                      <h3 className="text-white light-theme:text-gray-900 text-xs font-semibold mb-3 flex items-center gap-2">
+                        <span>📦</span> Material Cost
+                      </h3>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Base material cost:</span>
+                          <span className="text-white light-theme:text-gray-900">{formatCurrency(calculatedCost.enhanced.material.base)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Project multiplier:</span>
+                          <span className="text-indigo-400">{calculatedCost.enhanced.material.multiplier}x</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-700">
+                          <span className="text-gray-300 light-theme:text-gray-700 font-medium">Final material cost:</span>
+                          <span className="text-indigo-400 font-semibold">{formatCurrency(calculatedCost.enhanced.material.final)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Equipment Details */}
+                    <div className="bg-[#1E252E] light-theme:bg-white rounded-lg p-4">
+                      <h3 className="text-white light-theme:text-gray-900 text-xs font-semibold mb-3 flex items-center gap-2">
+                        <span>⚙️</span> Equipment/Resource Cost
+                      </h3>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Base equipment cost:</span>
+                          <span className="text-white light-theme:text-gray-900">{formatCurrency(calculatedCost.enhanced.equipment.base)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Project multiplier:</span>
+                          <span className="text-indigo-400">{calculatedCost.enhanced.equipment.multiplier}x</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-700">
+                          <span className="text-gray-300 light-theme:text-gray-700 font-medium">Final equipment cost:</span>
+                          <span className="text-indigo-400 font-semibold">{formatCurrency(calculatedCost.enhanced.equipment.final)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Misc Details */}
+                    <div className="bg-[#1E252E] light-theme:bg-white rounded-lg p-4">
+                      <h3 className="text-white light-theme:text-gray-900 text-xs font-semibold mb-3 flex items-center gap-2">
+                        <span>📎</span> Miscellaneous Expenses
+                      </h3>
+                      <div className="space-y-2 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Base misc cost:</span>
+                          <span className="text-white light-theme:text-gray-900">{formatCurrency(calculatedCost.enhanced.misc.base)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400 light-theme:text-gray-600">Project multiplier:</span>
+                          <span className="text-indigo-400">{calculatedCost.enhanced.misc.multiplier}x</span>
+                        </div>
+                        <div className="flex justify-between pt-2 border-t border-gray-700">
+                          <span className="text-gray-300 light-theme:text-gray-700 font-medium">Final misc cost:</span>
+                          <span className="text-indigo-400 font-semibold">{formatCurrency(calculatedCost.enhanced.misc.final)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  // SUMMARY VIEW - Using base data
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-[#1E252E] light-theme:bg-white rounded-md border border-[#2A313C] light-theme:border-gray-200">
+                      <span className="text-xs text-gray-400 light-theme:text-gray-600">Labor Cost:</span>
+                      <span className="text-xs font-semibold text-indigo-400">
+                        {formatCurrency(calculatedCost.base.laborCost)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-3 bg-[#1E252E] light-theme:bg-white rounded-md border border-[#2A313C] light-theme:border-gray-200">
+                      <span className="text-xs text-gray-400 light-theme:text-gray-600">Material Cost:</span>
+                      <span className="text-xs font-semibold text-indigo-400">
+                        {formatCurrency(calculatedCost.base.materialCost)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-3 bg-[#1E252E] light-theme:bg-white rounded-md border border-[#2A313C] light-theme:border-gray-200">
+                      <span className="text-xs text-gray-400 light-theme:text-gray-600">Equipment Cost:</span>
+                      <span className="text-xs font-semibold text-indigo-400">
+                        {formatCurrency(calculatedCost.base.equipmentCost)}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center p-3 bg-[#1E252E] light-theme:bg-white rounded-md border border-[#2A313C] light-theme:border-gray-200">
+                      <span className="text-xs text-gray-400 light-theme:text-gray-600">Misc Cost:</span>
+                      <span className="text-xs font-semibold text-indigo-400">
+                        {formatCurrency(calculatedCost.base.miscCost)}
+                      </span>
+                    </div>
+
+                    {/* Base Total */}
+                    <div className="flex justify-between items-center p-3 bg-[#1A1F2A] rounded-md">
+                      <span className="text-xs text-gray-300 light-theme:text-gray-700 font-medium">Base Total:</span>
+                      <span className="text-xs font-semibold text-white light-theme:text-gray-900">
+                        {formatCurrency(calculatedCost.base.totalCost)}
+                      </span>
+                    </div>
+
+                    {/* Contingency */}
+                    <div className="flex justify-between items-center px-3">
+                      <span className="text-xs text-gray-400 light-theme:text-gray-600">Contingency ({calculatedCost.enhanced.contingency.percentage}%):</span>
+                      <span className="text-xs text-amber-400">
+                        + {formatCurrency(calculatedCost.enhanced.contingency.amount)}
+                      </span>
+                    </div>
+
+                    {/* Tax */}
+                    <div className="flex justify-between items-center px-3">
+                      <span className="text-xs text-gray-400 light-theme:text-gray-600">GST ({calculatedCost.enhanced.tax.percentage}%):</span>
+                      <span className="text-xs text-emerald-400">
+                        + {formatCurrency(calculatedCost.enhanced.tax.amount)}
+                      </span>
+                    </div>
+
+                    {/* Final Total */}
+                    <div className="bg-[#1E252E] light-theme:bg-white rounded-lg p-4 flex flex-col justify-center items-center border border-indigo-500/30 mt-2">
+                      <span className="text-xs text-gray-400 light-theme:text-gray-600 mb-1">Final Total Cost</span>
+                      <span className="text-2xl font-bold text-indigo-400 mb-1">
+                        {formatCurrency(calculatedCost.enhanced.finalTotal)}
+                      </span>
+                      <span className="text-xs text-gray-500">including contingency & taxes</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Additional Notes */}
                 <div className="mt-5">
-                  <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                  <label className="block text-xs font-medium text-gray-400 light-theme:text-gray-600 mb-1.5">
                     Additional Notes
                   </label>
                   <div className="relative">
@@ -604,8 +862,8 @@ const CreateEstimate = () => {
                       name="notes"
                       value={formData.notes}
                       onChange={handleChange}
-                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] border border-[#2A313C] rounded-md 
-                               text-white text-sm placeholder-gray-500
+                      className="w-full pl-10 pr-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md 
+                               text-white light-theme:text-gray-900 text-sm placeholder-gray-500
                                focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 
                                outline-none transition-all duration-200"
                       rows="3"
@@ -614,13 +872,14 @@ const CreateEstimate = () => {
                   </div>
                 </div>
 
+                {/* Action Buttons */}
                 <div className="mt-6 flex gap-3 justify-end">
                   <button
                     type="button"
                     onClick={() => setCalculatedCost(null)}
-                    className="px-5 py-2.5 bg-[#1E252E] hover:bg-[#2A313C] 
-                             text-gray-300 text-sm font-medium rounded-md
-                             border border-[#2A313C] transition-all duration-200
+                    className="px-5 py-2.5 bg-[#1E252E] light-theme:bg-white hover:bg-[#2A313C] 
+                             text-gray-300 light-theme:text-gray-700 text-sm font-medium rounded-md
+                             border border-[#2A313C] light-theme:border-gray-200 transition-all duration-200
                              flex items-center gap-2
                              focus:ring-4 focus:ring-gray-600/20 focus:outline-none"
                   >

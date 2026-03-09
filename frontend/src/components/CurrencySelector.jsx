@@ -11,8 +11,8 @@ const CurrencySelector = () => {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-[#1E252E] border border-[#2A313C] 
-                 rounded-md text-sm text-white hover:bg-[#2A313C] transition-all duration-200"
+        className="flex items-center gap-2 px-3 py-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 
+                 rounded-md text-sm text-white light-theme:text-gray-900 hover:bg-[#2A313C] transition-all duration-200"
       >
         <span className="text-lg">{selectedCurrency?.symbol}</span>
         <span className="font-medium">{selectedCurrency?.code}</span>
@@ -32,10 +32,10 @@ const CurrencySelector = () => {
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           ></div>
-          <div className="absolute right-0 mt-2 w-64 bg-[#151A22] border border-[#2A313C] 
+          <div className="absolute right-0 mt-2 w-64 bg-[#151A22] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 
                         rounded-lg shadow-xl z-50 py-2">
-            <div className="px-4 py-2 border-b border-[#2A313C]">
-              <h3 className="text-xs font-medium text-gray-400">Select Currency</h3>
+            <div className="px-4 py-2 border-b border-[#2A313C] light-theme:border-gray-200">
+              <h3 className="text-xs font-medium text-gray-400 light-theme:text-gray-600">Select Currency</h3>
             </div>
             <div className="max-h-64 overflow-y-auto">
               {currencies.map((curr) => (
@@ -46,8 +46,8 @@ const CurrencySelector = () => {
                     setIsOpen(false);
                   }}
                   className={`w-full flex items-center justify-between px-4 py-2.5 
-                           text-sm hover:bg-[#1E252E] transition-all duration-200
-                           ${currency === curr.code ? 'bg-indigo-600/10 text-indigo-400' : 'text-gray-300'}`}
+                           text-sm hover:bg-[#1E252E] light-theme:bg-white transition-all duration-200
+                           ${currency === curr.code ? 'bg-indigo-600/10 text-indigo-400' : 'text-gray-300 light-theme:text-gray-700'}`}
                 >
                   <div className="flex items-center gap-3">
                     <span className="text-lg">{curr.symbol}</span>

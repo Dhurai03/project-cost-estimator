@@ -24,17 +24,16 @@ export const useProjects = () => {
   const fetchProjects = useCallback(async (page = 1) => {
     setLoading(true);
     try {
-      console.log('📁 Fetching projects - Page:', page);
       const response = await projectService.getProjects(page);
-      console.log('📁 Projects response:', response);
-      
-      setProjects(response.data || []);
-      setPagination(response.pagination || {
-        page: 1,
-        limit: 10,
-        total: 0,
-        pages: 0
-      });
+      if (response.success) {
+        setProjects(response.data || []);
+        setPagination(response.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          pages: 0
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
       toast.error('Failed to fetch projects');
@@ -45,10 +44,7 @@ export const useProjects = () => {
 
   const fetchStats = useCallback(async () => {
     try {
-      console.log('📊 Fetching project stats...');
       const response = await projectService.getProjectStats();
-      console.log('📊 Project stats response:', response);
-      
       if (response.success && response.data) {
         setStats({
           summary: response.data.summary || {
@@ -65,15 +61,16 @@ export const useProjects = () => {
     }
   }, []);
 
-  const createProject = async (projectData) => {
+  // ✅ THIS FUNCTION MUST EXIST AND BE RETURNED
+  const createProject = useCallback(async (projectData) => {
     try {
-      console.log('📝 Creating project:', projectData.name);
+      console.log('📝 Creating project:', projectData);
       const response = await projectService.createProject(projectData);
       console.log('✅ Project created:', response.data);
       
       toast.success('Project created successfully!');
       
-      // Force immediate refresh
+      // Refresh data after creation
       await Promise.all([
         fetchProjects(pagination.page),
         fetchStats()
@@ -85,9 +82,9 @@ export const useProjects = () => {
       toast.error(error.response?.data?.message || 'Failed to create project');
       throw error;
     }
-  };
+  }, [pagination.page, fetchProjects, fetchStats]);
 
-  const deleteProject = async (id) => {
+  const deleteProject = useCallback(async (id) => {
     try {
       await projectService.deleteProject(id);
       toast.success('Project deleted successfully!');
@@ -101,21 +98,21 @@ export const useProjects = () => {
       toast.error(error.response?.data?.message || 'Failed to delete project');
       throw error;
     }
-  };
+  }, [pagination.page, fetchProjects, fetchStats]);
 
-  // Initial fetch
   useEffect(() => {
     fetchProjects();
     fetchStats();
   }, [fetchProjects, fetchStats]);
 
+  // ✅ MAKE SURE ALL FUNCTIONS ARE RETURNED
   return {
     projects,
     loading,
     pagination,
     stats,
     fetchProjects,
-    createProject,
+    createProject,    // ← THIS MUST BE HERE
     deleteProject,
     fetchStats
   };

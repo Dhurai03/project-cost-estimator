@@ -3,6 +3,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
+const functionPointRoutes = require('./routes/functionPoint.routes');
+const cocomoRoutes = require('./routes/cocomo.routes');
+const analogyRoutes = require('./routes/analogy.routes');
 
 dotenv.config();
 
@@ -44,6 +47,9 @@ app.use(morgan('dev'));
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/estimates', estimateRoutes);
+app.use('/api/function-points', functionPointRoutes);
+app.use('/api/cocomo', cocomoRoutes);
+app.use('/api/analogy', analogyRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

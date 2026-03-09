@@ -23,17 +23,16 @@ export const useEstimates = () => {
   const fetchEstimates = useCallback(async (page = 1, status = '') => {
     setLoading(true);
     try {
-      console.log(`📊 Fetching estimates - Page: ${page}, Status: ${status || 'All'}`);
       const response = await estimateService.getEstimates(page, 10, status);
-      console.log('📊 Estimates response:', response);
-      
-      setEstimates(response.data || []);
-      setPagination(response.pagination || {
-        page: 1,
-        limit: 10,
-        total: 0,
-        pages: 0
-      });
+      if (response.success) {
+        setEstimates(response.data || []);
+        setPagination(response.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          pages: 0
+        });
+      }
     } catch (error) {
       console.error('Failed to fetch estimates:', error);
       toast.error('Failed to fetch estimates');
@@ -44,10 +43,7 @@ export const useEstimates = () => {
 
   const fetchStats = useCallback(async () => {
     try {
-      console.log('📊 Fetching estimate stats...');
       const response = await estimateService.getEstimateStats();
-      console.log('📊 Estimate stats response:', response);
-      
       if (response.success && response.data) {
         setStats({
           summary: response.data.summary || {
@@ -63,31 +59,31 @@ export const useEstimates = () => {
     }
   }, []);
 
-  const createEstimate = async (projectId, notes = '') => {
-    try {
-      console.log('📝 Creating estimate for project:', projectId);
-      const response = await estimateService.createEstimate(projectId, notes);
-      console.log('✅ Estimate created:', response.data);
-      
-      toast.success('Estimate created successfully!');
-      
-      // Force immediate refresh of both estimates and stats
-      await Promise.all([
-        fetchEstimates(pagination.page, ''),
-        fetchStats()
-      ]);
-      
-      return response.data;
-    } catch (error) {
-      console.error('Failed to create estimate:', error);
-      toast.error(error.response?.data?.message || 'Failed to create estimate');
-      throw error;
-    }
-  };
+  // ✅ THIS FUNCTION MUST EXIST AND BE RETURNED
+const createEstimate = useCallback(async (projectId, notes = '') => {
+  try {
+    console.log('📝 Creating estimate for project:', projectId);
+    // The backend expects projectId, notes, and status
+    const response = await estimateService.createEstimate(projectId, notes);
+    console.log('✅ Estimate created:', response.data);
+    
+    toast.success('Estimate created successfully!');
+    
+    await Promise.all([
+      fetchEstimates(pagination.page, ''),
+      fetchStats()
+    ]);
+    
+    return response.data;
+  } catch (error) {
+    console.error('Failed to create estimate:', error);
+    toast.error(error.response?.data?.message || 'Failed to create estimate');
+    throw error;
+  }
+}, [pagination.page, fetchEstimates, fetchStats]);
 
-  const deleteEstimate = async (id) => {
+  const deleteEstimate = useCallback(async (id) => {
     try {
-      console.log('🗑️ Deleting estimate:', id);
       await estimateService.deleteEstimate(id);
       toast.success('Estimate deleted successfully!');
       
@@ -100,9 +96,9 @@ export const useEstimates = () => {
       toast.error(error.response?.data?.message || 'Failed to delete estimate');
       throw error;
     }
-  };
+  }, [pagination.page, fetchEstimates, fetchStats]);
 
-  const exportPDF = async (id) => {
+  const exportPDF = useCallback(async (id) => {
     try {
       await estimateService.exportPDF(id);
       toast.success('PDF downloaded successfully!');
@@ -110,9 +106,9 @@ export const useEstimates = () => {
       console.error('Failed to export PDF:', error);
       toast.error('Failed to export PDF');
     }
-  };
+  }, []);
 
-  const exportCSV = async (id) => {
+  const exportCSV = useCallback(async (id) => {
     try {
       await estimateService.exportCSV(id);
       toast.success('CSV downloaded successfully!');
@@ -120,21 +116,21 @@ export const useEstimates = () => {
       console.error('Failed to export CSV:', error);
       toast.error('Failed to export CSV');
     }
-  };
+  }, []);
 
-  // Initial fetch
   useEffect(() => {
     fetchEstimates();
     fetchStats();
   }, [fetchEstimates, fetchStats]);
 
+  // ✅ MAKE SURE ALL FUNCTIONS ARE RETURNED
   return {
     estimates,
     loading,
     pagination,
     stats,
     fetchEstimates,
-    createEstimate,
+    createEstimate,    // ← THIS MUST BE HERE
     deleteEstimate,
     exportPDF,
     exportCSV,

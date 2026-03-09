@@ -1,3 +1,4 @@
+// backend/src/controllers/project.controller.js
 const Project = require('../models/Project.model');
 const { validationResult } = require('express-validator');
 const { calculateProjectCost } = require('../services/calculation.service');
@@ -7,27 +8,46 @@ const { calculateProjectCost } = require('../services/calculation.service');
 // @access  Private
 const createProject = async (req, res, next) => {
   try {
-    console.log('📝 Creating project:', req.body);
+    console.log('📝 Creating project with body:', req.body);
     
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         errors: errors.array()
       });
     }
 
-    // Calculate costs
-    const costBreakdown = calculateProjectCost(req.body);
+    const calculationData = {
+      duration: req.body.duration,
+      teamSize: req.body.teamSize,
+      laborCostPerHour: req.body.laborCostPerHour,
+      materialCost: req.body.materialCost,
+      equipmentCost: req.body.equipmentCost,
+      miscExpenses: req.body.miscExpenses,
+      complexityLevel: req.body.complexityLevel,
+      projectType: req.body.projectType
+    };
+
+    const costBreakdown = calculateProjectCost(calculationData);
     
-    // Create project with calculated costs
     const project = await Project.create({
-      ...req.body,
+      name: req.body.name,
+      duration: req.body.duration,
+      projectType: req.body.projectType,
+      teamSize: req.body.teamSize,
+      complexityLevel: req.body.complexityLevel,
+      laborCostPerHour: req.body.laborCostPerHour,
+      materialCost: req.body.materialCost,
+      equipmentCost: req.body.equipmentCost,
+      miscExpenses: req.body.miscExpenses,
       user: req.user.userId,
       ...costBreakdown
     });
 
     console.log('✅ Project created:', project._id);
+    console.log('✅ Calculated costs:', costBreakdown);
 
     res.status(201).json({
       success: true,
@@ -213,11 +233,10 @@ const getProjectStats = async (req, res, next) => {
   }
 };
 
-module.exports = {
-  createProject,
-  getProjects,
-  getProject,
-  updateProject,
-  deleteProject,
-  getProjectStats
-};
+// ✅ EXPORT ALL FUNCTIONS using exports
+exports.createProject = createProject;
+exports.getProjects = getProjects;
+exports.getProject = getProject;
+exports.updateProject = updateProject;
+exports.deleteProject = deleteProject;
+exports.getProjectStats = getProjectStats;

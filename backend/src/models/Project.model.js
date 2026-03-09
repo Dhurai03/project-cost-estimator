@@ -9,8 +9,7 @@ const projectSchema = new mongoose.Schema({
   name: {
     type: String,
     required: [true, 'Please provide a project name'],
-    trim: true,
-    maxlength: [100, 'Project name cannot be more than 100 characters']
+    trim: true
   },
   duration: {
     type: Number,
@@ -20,10 +19,7 @@ const projectSchema = new mongoose.Schema({
   projectType: {
     type: String,
     required: [true, 'Please select project type'],
-    enum: {
-      values: ['Software', 'Construction', 'Event', 'Manufacturing'],
-      message: '{VALUE} is not supported'
-    }
+    enum: ['Software', 'Construction', 'Event', 'Manufacturing']
   },
   teamSize: {
     type: Number,
@@ -33,10 +29,7 @@ const projectSchema = new mongoose.Schema({
   complexityLevel: {
     type: String,
     required: [true, 'Please select complexity level'],
-    enum: {
-      values: ['Low', 'Medium', 'High'],
-      message: '{VALUE} is not supported'
-    }
+    enum: ['Low', 'Medium', 'High']
   },
   laborCostPerHour: {
     type: Number,
@@ -77,10 +70,6 @@ const projectSchema = new mongoose.Schema({
   miscCost: {
     type: Number,
     required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
 }, {
   timestamps: true

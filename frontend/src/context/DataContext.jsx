@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useProjects } from '../hooks/useProjects';
 import { useEstimates } from '../hooks/useEstimates';
 
@@ -8,19 +8,24 @@ export const useData = () => useContext(DataContext);
 
 export const DataProvider = ({ children }) => {
   const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [refreshCounter, setRefreshCounter] = useState(0); // Add counter to force refresh
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshTimeoutRef = useRef(null);
   
   // Initialize hooks
   const projects = useProjects();
   const estimates = useEstimates();
 
   const refreshAllData = useCallback(async () => {
+    // Prevent multiple simultaneous refreshes
+    if (isRefreshing) {
+      console.log('⏳ Refresh already in progress, skipping...');
+      return;
+    }
+
+    setIsRefreshing(true);
     console.log('🔄 Refreshing all dashboard data...');
+    
     try {
-      // Increment counter to force re-fetch
-      setRefreshCounter(prev => prev + 1);
-      
-      // Fetch all data in parallel
       await Promise.all([
         projects.fetchStats(),
         estimates.fetchStats(),
@@ -32,16 +37,28 @@ export const DataProvider = ({ children }) => {
       console.log('✅ Dashboard data refreshed at:', new Date().toLocaleTimeString());
     } catch (error) {
       console.error('❌ Failed to refresh data:', error);
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [projects, estimates]);
+  }, [projects, estimates, isRefreshing]);
 
-  // Auto-refresh every 10 seconds
+  // Auto-refresh every 30 seconds - but with cleanup
   useEffect(() => {
+    // Clear any existing timeout
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+
     const interval = setInterval(() => {
       refreshAllData();
-    }, 10000); // 10 seconds
+    }, 30000); // 30 seconds
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
   }, [refreshAllData]);
 
   const value = {
@@ -49,7 +66,7 @@ export const DataProvider = ({ children }) => {
     ...estimates,
     refreshAllData,
     lastUpdated,
-    refreshCounter,
+    isRefreshing,
     projectsStats: projects.stats,
     estimatesStats: estimates.stats
   };

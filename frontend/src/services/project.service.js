@@ -12,7 +12,7 @@ export const projectService = {
     }
   },
 
-  // Create new project
+  // ✅ THIS MUST EXIST
   createProject: async (projectData) => {
     try {
       const response = await api.post('/projects', projectData);
@@ -23,15 +23,24 @@ export const projectService = {
     }
   },
 
-  // Get project statistics - CRITICAL FOR DASHBOARD
+  // Get project statistics
   getProjectStats: async () => {
     try {
-      console.log('📊 Fetching project stats from API...');
       const response = await api.get('/projects/stats/summary');
-      console.log('📊 Project stats response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error in getProjectStats:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Delete project
+  deleteProject: async (id) => {
+    try {
+      const response = await api.delete(`/projects/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error in deleteProject:', error.response?.data || error.message);
       throw error;
     }
   }

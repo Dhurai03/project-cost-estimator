@@ -1,4 +1,4 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
 import { useEffect, useState } from 'react';
 import { useEstimates } from '../hooks/useEstimates';
@@ -6,8 +6,8 @@ import { useEstimates } from '../hooks/useEstimates';
 const CustomTooltip = ({ active, payload }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-[#1E252E] px-3 py-2 rounded-md border border-[#2A313C]">
-        <p className="text-xs text-white">{payload[0].payload.name}</p>
+      <div className="bg-[#1E252E] light-theme:bg-white px-3 py-2 rounded-md border border-[#2A313C] light-theme:border-gray-200">
+        <p className="text-xs text-white light-theme:text-gray-900">{payload[0].payload.name}</p>
         <p className="text-xs font-semibold text-indigo-400">{formatCurrency(payload[0].value)}</p>
       </div>
     );
@@ -72,16 +72,22 @@ const CostBreakdownChart = () => {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white text-sm font-medium">PROJECT COST TREND</h3>
+        <h3 className="text-white light-theme:text-gray-900 text-sm font-medium">PROJECT COST TREND</h3>
         <div className="flex items-center gap-4">
-          <span className="text-xs text-gray-400">All Projects</span>
-          <span className="text-xs text-gray-400">Total Cost</span>
+          <span className="text-xs text-gray-400 light-theme:text-gray-600">All Projects</span>
+          <span className="text-xs text-gray-400 light-theme:text-gray-600">Total Cost</span>
         </div>
       </div>
       
       <div className="h-64 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+          <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+            <defs>
+              <linearGradient id="colorCost" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#2A313C" vertical={false} />
             <XAxis 
               dataKey="name" 
@@ -95,17 +101,21 @@ const CostBreakdownChart = () => {
               fontSize={11}
               tickLine={false}
               axisLine={{ stroke: '#2A313C' }}
-              tickFormatter={(value) => `$${value/1000}k`}
+              tickFormatter={(value) => `$${(value/1000).toFixed(0)}k`}
               domain={[0, yAxisMax]}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar 
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#4f46e5', strokeWidth: 1, strokeDasharray: '3 3' }} />
+            <Area 
+              type="monotone"
               dataKey="value" 
-              fill="#6366f1" 
-              radius={[4, 4, 0, 0]}
-              barSize={24}
+              stroke="#6366f1" 
+              strokeWidth={3}
+              fillOpacity={1}
+              fill="url(#colorCost)" 
+              animationDuration={1500}
+              animationEasing="ease-out"
             />
-          </BarChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
       
@@ -113,7 +123,7 @@ const CostBreakdownChart = () => {
       <div className="flex items-center justify-center gap-6 mt-4">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 bg-indigo-500 rounded-sm"></div>
-          <span className="text-xs text-gray-400">Daily Project Cost</span>
+          <span className="text-xs text-gray-400 light-theme:text-gray-600">Daily Project Cost</span>
         </div>
       </div>
     </div>

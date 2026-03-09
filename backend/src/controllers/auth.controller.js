@@ -1,13 +1,13 @@
+// backend/src/controllers/auth.controller.js
 const User = require('../models/User.model');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 
-// Generate JWT Token
 const generateToken = (userId) => {
   return jwt.sign(
     { userId },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRE }
+    { expiresIn: process.env.JWT_EXPIRE || '30d' }
   );
 };
 
@@ -18,10 +18,8 @@ exports.register = async (req, res, next) => {
   try {
     console.log('📝 Registration attempt:', req.body);
     
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -31,10 +29,9 @@ exports.register = async (req, res, next) => {
 
     const { name, email, password } = req.body;
 
-    // Check if user already exists
+    // Check if user exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      console.log('❌ User already exists:', email);
       return res.status(400).json({
         success: false,
         message: 'User already exists with this email'
@@ -48,9 +45,8 @@ exports.register = async (req, res, next) => {
       password
     });
 
-    console.log('✅ User created successfully:', user._id);
+    console.log('✅ User created:', user._id);
 
-    // Generate token
     const token = generateToken(user._id);
 
     res.status(201).json({
@@ -77,7 +73,6 @@ exports.login = async (req, res, next) => {
     
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log('❌ Validation errors:', errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
@@ -87,10 +82,10 @@ exports.login = async (req, res, next) => {
 
     const { email, password } = req.body;
 
-    // Check if user exists
+    // Find user with password field
     const user = await User.findOne({ email: email.toLowerCase() }).select('+password');
+    
     if (!user) {
-      console.log('❌ User not found:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -100,7 +95,6 @@ exports.login = async (req, res, next) => {
     // Check password
     const isPasswordMatch = await user.comparePassword(password);
     if (!isPasswordMatch) {
-      console.log('❌ Invalid password for user:', email);
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
@@ -109,7 +103,6 @@ exports.login = async (req, res, next) => {
 
     console.log('✅ Login successful:', user._id);
 
-    // Generate token
     const token = generateToken(user._id);
 
     res.status(200).json({
@@ -132,6 +125,8 @@ exports.login = async (req, res, next) => {
 // @access  Private
 exports.getMe = async (req, res, next) => {
   try {
+    console.log('👤 Get me request for user:', req.user?.userId);
+    
     const user = await User.findById(req.user.userId);
     
     if (!user) {

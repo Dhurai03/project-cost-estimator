@@ -67,8 +67,7 @@ const Register = () => {
       <div className="w-full max-w-sm">
         {/* InsideBox Label */}
         <div className="mb-8">
-          <span className="text-xs font-semibold text-gray-400 tracking-[0.2em] uppercase">
-            InsideBox
+          <span className="text-xs font-semibold text-gray-400 light-theme:text-gray-600 tracking-[0.2em] uppercase">
           </span>
         </div>
 
@@ -78,7 +77,7 @@ const Register = () => {
             Create an account
           </h1>
           <p className="text-sm light-text-secondary">
-            Get started with InsideBox
+            Get started with a free account and explore our features.
           </p>
         </div>
 
@@ -128,6 +127,22 @@ const Register = () => {
               onChange={handleChange}
               className="light-input-border-bottom"
               placeholder="Enter your password"
+              required
+            />
+          </div>
+
+          {/* Confirm Password Field */}
+          <div>
+            <label className="light-label">
+              Confirm Password
+            </label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="light-input-border-bottom"
+              placeholder="Confirm your password"
               required
             />
           </div>
