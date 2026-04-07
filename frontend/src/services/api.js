@@ -1,7 +1,8 @@
 // frontend/src/services/api.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api';
+// Use Vite env variable if present, or fallback to Vite's proxy path /api
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 console.log('🌐 API Base URL:', API_URL);
 

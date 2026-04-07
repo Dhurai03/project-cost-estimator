@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { estimateService } from '../services/estimate.service';
 import toast from 'react-hot-toast';
 
@@ -118,10 +118,7 @@ const createEstimate = useCallback(async (projectId, notes = '') => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchEstimates();
-    fetchStats();
-  }, [fetchEstimates, fetchStats]);
+  // ℹ️ No auto-fetch here — DataContext triggers fetch only after authentication.
 
   // ✅ MAKE SURE ALL FUNCTIONS ARE RETURNED
   return {

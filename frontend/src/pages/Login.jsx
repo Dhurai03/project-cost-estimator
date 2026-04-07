@@ -41,8 +41,8 @@ const Login = () => {
   // Demo credentials for testing
   const fillDemoCredentials = () => {
     setFormData({
-      email: 'demo@example.com',
-      password: 'password123'
+      email: 'test@gmail.com',
+      password: '123456'
     });
   };
 

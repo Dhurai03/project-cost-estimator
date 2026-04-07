@@ -216,17 +216,21 @@ const AnalogyEstimation = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F15] light-theme:bg-gray-50">
+    <div className="min-h-screen bg-[#05070A] light-theme:bg-gray-50 relative overflow-hidden">
+      {/* Ambient Backgrounds */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+      
       <Navbar />
-      <div className="container-custom py-8">
+      <div className="container-custom py-8 relative z-10">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-white light-theme:text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">
             Analogy-Based Estimation
           </h1>
           <button
             type="button"
             onClick={() => calculateAnalogy()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            className="premium-btn-primary"
           >
             Find Matches & Estimate
           </button>
@@ -234,18 +238,21 @@ const AnalogyEstimation = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
-            <h2 className="text-white light-theme:text-gray-900 font-medium mb-4">Target Project</h2>
+          <div className="glass-panel p-6">
+            <h2 className="text-white font-medium mb-4 flex items-center gap-2">
+              <span className="p-1 bg-indigo-500/20 text-indigo-400 rounded">1</span>
+              Target Project
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Project Name</label>
+                <label className="text-xs text-gray-400 mb-1 block">Project Name</label>
                 <input
                   type="text"
                   list="analogy-project-list"
                   placeholder="Select or type a new project..."
                   value={formData.projectName || ''}
                   onChange={(e) => setFormData({...formData, projectName: e.target.value})}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 />
                 <datalist id="analogy-project-list">
                   {projects.map(p => (
@@ -255,11 +262,11 @@ const AnalogyEstimation = () => {
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Project Type</label>
+                <label className="text-xs text-gray-400 mb-1 block">Project Type</label>
                 <select
                   value={formData.features.projectType}
                   onChange={(e) => handleFeatureChange('projectType', e.target.value)}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 >
                   <option value="Web Application">Web Application</option>
                   <option value="Mobile Application">Mobile Application</option>
@@ -269,11 +276,11 @@ const AnalogyEstimation = () => {
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Complexity</label>
+                <label className="text-xs text-gray-400 mb-1 block">Complexity</label>
                 <select
                   value={formData.features.complexity}
                   onChange={(e) => handleFeatureChange('complexity', e.target.value)}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 >
                   <option value="Low">Low - Standard CRUD</option>
                   <option value="Medium">Medium - Integrations/Auth</option>
@@ -282,49 +289,52 @@ const AnalogyEstimation = () => {
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Primary Tech Stack</label>
+                <label className="text-xs text-gray-400 mb-1 block">Primary Tech Stack</label>
                 <input
                   type="text"
                   value={formData.features.technologyStack}
                   onChange={(e) => handleFeatureChange('technologyStack', e.target.value)}
                   placeholder="e.g. MERN, Django, Python"
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Est. Team Size</label>
+                <label className="text-xs text-gray-400 mb-1 block">Est. Team Size</label>
                 <input
                   type="number"
                   value={formData.features.teamSize}
                   onChange={(e) => handleFeatureChange('teamSize', parseInt(e.target.value) || 0)}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Est. Duration (Months)</label>
+                <label className="text-xs text-gray-400 mb-1 block">Est. Duration (Months)</label>
                 <input
                   type="number"
                   value={formData.features.duration}
                   onChange={(e) => handleFeatureChange('duration', parseInt(e.target.value) || 0)}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 />
               </div>
             </div>
           </div>
 
-          <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
-            <h2 className="text-white light-theme:text-gray-900 font-medium mb-4">Algorithm Constraints</h2>
+          <div className="glass-panel p-6">
+            <h2 className="text-white font-medium mb-4 flex items-center gap-2">
+              <span className="p-1 bg-indigo-500/20 text-indigo-400 rounded">2</span>
+              Algorithm Constraints
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Minimum Similarity Threshold (%)</label>
+                <label className="text-xs text-gray-400 mb-1 block">Minimum Similarity Threshold (%)</label>
                 <input
                   type="number"
                   min="0" max="100"
                   value={formData.searchParams.minSimilarity}
                   onChange={(e) => setFormData(prev => ({...prev, searchParams: {...prev.searchParams, minSimilarity: parseInt(e.target.value) || 0}}))}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 />
               </div>
             </div>
@@ -332,10 +342,11 @@ const AnalogyEstimation = () => {
 
           {/* Results Area */}
           {results && (
-            <div className="bg-gradient-to-r from-indigo-900/30 to-[#151A22] light-theme:from-indigo-50 light-theme:to-white rounded-lg border border-indigo-500/30 p-6">
-              <h2 className="text-indigo-400 light-theme:text-indigo-600 font-medium mb-4">Analogy Engine Results</h2>
+            <div className="bg-[#1E252E] light-theme:bg-white rounded-lg border border-blue-500/30 p-6 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 rounded-full blur-[80px] pointer-events-none" />
+              <h2 className="text-blue-400 light-theme:text-blue-600 font-medium mb-4 relative z-10">Analogy Engine Results</h2>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 relative z-10">
                 <div>
                   <p className="text-xs text-gray-400 light-theme:text-gray-500 mb-1">Extrapolated Total Cost</p>
                   <p className="text-3xl font-bold text-emerald-400">${results.estimatedCost.toLocaleString()}</p>
@@ -347,20 +358,20 @@ const AnalogyEstimation = () => {
                 <div>
                   <p className="text-xs text-gray-400 light-theme:text-gray-500 mb-1">Risk Profile</p>
                   <span className={`inline-block px-3 py-1 mt-1 rounded text-sm font-medium
-                    ${results.riskLevel === 'Low' ? 'bg-emerald-500/20 text-emerald-400' : ''}
-                    ${results.riskLevel === 'Medium' ? 'bg-amber-500/20 text-amber-400' : ''}
-                    ${results.riskLevel === 'High' ? 'bg-rose-500/20 text-rose-400' : ''}
+                    ${results.riskLevel === 'Low' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : ''}
+                    ${results.riskLevel === 'Medium' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : ''}
+                    ${results.riskLevel === 'High' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : ''}
                   `}>
                     {results.riskLevel} Risk
                   </span>
                 </div>
               </div>
 
-              <div>
+              <div className="relative z-10">
                 <h3 className="text-sm font-medium text-gray-300 light-theme:text-gray-700 mb-3">Historical Source Matches:</h3>
                 <div className="space-y-3">
                   {results.similarProjects.map((match, idx) => (
-                    <div key={idx} className="flex justify-between items-center bg-[#0B0F15] light-theme:bg-gray-100 p-3 rounded border border-[#2A313C] light-theme:border-gray-200">
+                    <div key={idx} className="flex justify-between items-center glass-panel p-3 border border-indigo-500/20 hover:border-blue-500/50 transition-colors">
                       <div>
                         <p className="text-white light-theme:text-gray-900 font-medium text-sm">{match.name}</p>
                         <p className="text-xs text-gray-500 mt-1">{match.type} • {match.complexity} • {match.stack}</p>
@@ -377,19 +388,19 @@ const AnalogyEstimation = () => {
           )}
 
           {/* Submission */}
-          <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
+          <div className="glass-panel p-6 neon-border">
              <textarea
               value={formData.notes}
               onChange={(e) => setFormData({...formData, notes: e.target.value})}
               placeholder="Reasoning or notes..."
               rows="2"
-              className="w-full p-3 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900 mb-4"
+              className="premium-input mb-4"
             />
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}
-                className="px-6 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors"
+                className="premium-btn-secondary"
                 disabled={loading}
               >
                 Cancel
@@ -397,7 +408,7 @@ const AnalogyEstimation = () => {
               <button
                 type="submit"
                 disabled={loading || !results}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                className="premium-btn-primary"
               >
                 {loading ? 'Saving...' : 'Save Analogy Report'}
               </button>

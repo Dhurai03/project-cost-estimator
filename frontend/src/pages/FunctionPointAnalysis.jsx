@@ -216,17 +216,21 @@ const FunctionPointAnalysis = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F15] light-theme:bg-gray-50">
+    <div className="min-h-screen bg-[#05070A] light-theme:bg-gray-50 relative overflow-hidden">
+      {/* Ambient Backgrounds */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+      
       <Navbar />
-      <div className="container-custom py-8">
+      <div className="container-custom py-8 relative z-10">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-white light-theme:text-gray-900">
-            Function Point Analysis (FPA)
+          <h1 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-400">
+            Function Point Analysis
           </h1>
           <button
             type="button"
             onClick={() => calculateFPA()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+            className="premium-btn-primary"
           >
             Calculate FPA
           </button>
@@ -235,18 +239,21 @@ const FunctionPointAnalysis = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           
           {/* Top Section: Project and Basic settings */}
-          <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
-            <h2 className="text-white light-theme:text-gray-900 font-medium mb-4">Project Parameters</h2>
+          <div className="glass-panel p-6">
+            <h2 className="text-white font-medium mb-4 flex items-center gap-2">
+              <span className="p-1 bg-indigo-500/20 text-indigo-400 rounded">1</span>
+              Project Parameters
+            </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Project Name</label>
+                <label className="text-xs text-gray-400 mb-1 block">Project Name</label>
                 <input
                   type="text"
                   list="project-list"
                   placeholder="Select or type a new project..."
                   value={formData.projectName}
                   onChange={(e) => setFormData({...formData, projectName: e.target.value})}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 />
                 <datalist id="project-list">
                   {projects.map(p => (
@@ -256,21 +263,21 @@ const FunctionPointAnalysis = () => {
               </div>
               
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Labor Rate ($/hour)</label>
+                <label className="text-xs text-gray-400 mb-1 block">Labor Rate ($/hour)</label>
                 <input
                   type="number"
                   value={formData.laborRatePerHour}
                   onChange={(e) => setFormData({...formData, laborRatePerHour: parseFloat(e.target.value) || 0})}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 />
               </div>
 
               <div>
-                <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Language (Avg LOC per FP)</label>
+                <label className="text-xs text-gray-400 mb-1 block">Language (Avg LOC per FP)</label>
                 <select
                   value={formData.languageMultiplier}
                   onChange={(e) => setFormData({...formData, languageMultiplier: parseFloat(e.target.value) || 50})}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="premium-input"
                 >
                   <option value="53">Java (53 LOC/FP)</option>
                   <option value="50">C# (50 LOC/FP)</option>
@@ -284,8 +291,11 @@ const FunctionPointAnalysis = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Function Point Counts */}
-            <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
-               <h2 className="text-white light-theme:text-gray-900 font-medium mb-4">Function Counts</h2>
+            <div className="glass-panel p-6">
+               <h2 className="text-white font-medium mb-4 flex items-center gap-2">
+                 <span className="p-1 bg-indigo-500/20 text-indigo-400 rounded">2</span>
+                 Function Counts
+               </h2>
                <p className="text-xs text-gray-400 mb-6">Enter the quantity of functions identified in each category based on complexity.</p>
                
                <div className="space-y-6">
@@ -307,7 +317,7 @@ const FunctionPointAnalysis = () => {
                              min="0"
                              value={formData.functionCounts[category.key][complexity]}
                              onChange={(e) => handleFuncCountChange(category.key, complexity, e.target.value)}
-                             className="w-full text-center p-1.5 bg-[#1E252E] light-theme:bg-gray-50 border border-[#2A313C] light-theme:border-gray-200 rounded text-white light-theme:text-gray-900 text-sm"
+                             className="w-full text-center p-2 bg-[#0B0F15] border border-[#2A313C]/50 rounded text-white text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-inner"
                            />
                          </div>
                        ))}
@@ -318,10 +328,13 @@ const FunctionPointAnalysis = () => {
             </div>
 
             {/* Value Adjustment Factors */}
-            <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
+            <div className="glass-panel p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-white light-theme:text-gray-900 font-medium">Value Adjustment Factors (GSCs)</h2>
-                <span className="text-xs text-indigo-400 bg-indigo-500/10 px-2 py-1 rounded">Scale: 0-5</span>
+                <h2 className="text-white font-medium flex items-center gap-2">
+                  <span className="p-1 bg-indigo-500/20 text-indigo-400 rounded">3</span>
+                  Value Adjustment Factors
+                </h2>
+                <span className="text-xs text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2 py-1 rounded">Scale: 0-5</span>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
@@ -342,13 +355,13 @@ const FunctionPointAnalysis = () => {
                   { key: 'facilitateChange', label: 'Facilitate Change' }
                 ].map(factor => (
                   <div key={factor.key} className="flex justify-between items-center border-b border-[#2A313C]/50 light-theme:border-gray-100 pb-2">
-                    <label className="text-xs text-gray-300 light-theme:text-gray-700 truncate pr-2" title={factor.label}>
+                    <label className="text-xs text-gray-300 truncate pr-2" title={factor.label}>
                       {factor.label}
                     </label>
                     <select
                       value={formData.valueAdjustmentFactors[factor.key]}
                       onChange={(e) => handleVAFChange(factor.key, e.target.value)}
-                      className="w-14 p-1 text-center bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded text-white light-theme:text-gray-900 text-xs"
+                      className="w-14 p-1 text-center bg-[#0B0F15] border border-[#2A313C]/50 rounded text-white text-xs focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all shadow-inner"
                     >
                       {[0,1,2,3,4,5].map(v => <option key={v} value={v}>{v}</option>)}
                     </select>
@@ -386,19 +399,19 @@ const FunctionPointAnalysis = () => {
           )}
 
           {/* Submission */}
-          <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
+          <div className="glass-panel p-6 neon-border">
              <textarea
               value={formData.notes}
               onChange={(e) => setFormData({...formData, notes: e.target.value})}
               placeholder="Additional notes for this estimate..."
               rows="2"
-              className="w-full p-3 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900 mb-4"
+              className="premium-input mb-4"
             />
             <div className="flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}
-                className="px-6 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-600 transition-colors"
+                className="premium-btn-secondary"
                 disabled={loading}
               >
                 Cancel
@@ -406,7 +419,7 @@ const FunctionPointAnalysis = () => {
               <button
                 type="submit"
                 disabled={loading || !results}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                className="premium-btn-primary"
               >
                 {loading ? 'Saving...' : 'Save FPA Report'}
               </button>

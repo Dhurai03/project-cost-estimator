@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { projectService } from '../services/project.service';
 import toast from 'react-hot-toast';
 
@@ -100,10 +100,7 @@ export const useProjects = () => {
     }
   }, [pagination.page, fetchProjects, fetchStats]);
 
-  useEffect(() => {
-    fetchProjects();
-    fetchStats();
-  }, [fetchProjects, fetchStats]);
+  // ℹ️ No auto-fetch here — DataContext triggers fetch only after authentication.
 
   // ✅ MAKE SURE ALL FUNCTIONS ARE RETURNED
   return {

@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useState } from 'react';
-import ThemeToggle from './ThemeToggle'; // ✅ ADD THIS
+import ThemeToggle from './ThemeToggle';
+import CurrencySelector from './CurrencySelector';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -17,38 +18,49 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-[#0B0F15] light-theme:bg-white border-b border-[#2A313C] light-theme:border-gray-200">
+    <nav className="sticky top-0 z-50 bg-[#0F141E]/80 backdrop-blur-xl border-b border-white/5 shadow-lg">
       <div className="container-custom">
         <div className="flex items-center justify-between h-16">
           {/* Left Section: Logo & Desktop Navigation */}
           <div className="flex items-center gap-8">
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <span className="text-white light-theme:text-gray-900 text-lg font-semibold">
+            <Link to="/dashboard" className="flex items-center gap-2 group">
+              <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 animate-gradient-x">
                 ProjectCostPro
               </span>
             </Link>
 
-            <div className="hidden md:flex items-center gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200
-                    ${location.pathname === item.path
-                      ? 'bg-[#1E252E] light-theme:bg-gray-100 text-white light-theme:text-gray-900'
-                      : 'text-gray-400 light-theme:text-gray-600 hover:text-white light-theme:hover:text-gray-900 hover:bg-[#1E252E] light-theme:hover:bg-gray-100'
-                    }`}
-                >
-                  <span className="mr-2">{item.icon}</span>
-                  {item.label}
-                </Link>
-              ))}
+            <div className="hidden md:flex items-center gap-2 ml-4">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 overflow-hidden
+                      ${isActive
+                        ? 'text-white'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                      }`}
+                  >
+                    {isActive && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 opacity-100" />
+                    )}
+                    {isActive && (
+                      <div className="absolute bottom-0 left-0 h-[2px] w-full bg-gradient-to-r from-indigo-500 to-purple-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
+                    )}
+                    <span className="relative flex items-center gap-2">
+                      <span className={`${isActive ? 'opacity-100' : 'opacity-70'} transition-opacity`}>{item.icon}</span>
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
 
           {/* Right Section */}
           <div className="flex items-center gap-3">
-            {/* Theme Toggle - ADD THIS */}
+            <CurrencySelector />
             <ThemeToggle />
 
             {/* User Menu */}

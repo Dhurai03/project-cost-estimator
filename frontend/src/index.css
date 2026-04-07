@@ -5,6 +5,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Keyframes ────────────────────────────────────────────── */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+  100% { box-shadow: 0 0 0 0  rgba(99, 102, 241, 0); }
+}
+
+@keyframes checkmark {
+  0%   { stroke-dashoffset: 50; }
+  100% { stroke-dashoffset: 0; }
+}
+
+/* ── Utility classes ──────────────────────────────────────── */
+
 @layer base {
   html {
     font-family: 'Inter', system-ui, sans-serif;
@@ -32,86 +70,60 @@
 }
 
 @layer components {
-  /* ============ DARK THEME (Harness/Cloud Cost Explorer) ============ */
+  /* ============ PREMIUM DARK THEME ============ */
   .dark-theme {
-    @apply bg-[#0B0F15];
+    @apply bg-[#05070A]; /* Even darker base for better contrast with glowing elements */
   }
 
-  /* Dark cards */
-  .dark-card {
-    @apply bg-[#151A22] rounded-lg border border-[#2A313C] p-5;
+  /* Glassmorphism Panels */
+  .glass-panel {
+    @apply relative bg-[#0F141E]/70 backdrop-blur-xl rounded-2xl border border-white/5 overflow-hidden shadow-2xl;
+  }
+  
+  .glass-panel::before {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none;
   }
 
-  .dark-card-header {
-    @apply text-white font-medium text-sm;
+  /* Neon Effects */
+  .neon-border {
+    @apply relative overflow-hidden;
+  }
+  
+  .neon-border::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-50;
   }
 
-  .dark-card-title {
-    @apply text-xs text-gray-400;
+  /* Premium Buttons */
+  .premium-btn-primary {
+    @apply relative px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-400 hover:to-purple-500 
+           text-white text-sm font-medium rounded-xl transition-all duration-300 shadow-[0_0_20px_rgba(99,102,241,0.3)]
+           hover:shadow-[0_0_30px_rgba(99,102,241,0.5)] active:scale-95 border border-white/10 overflow-hidden;
   }
 
-  .dark-card-value {
-    @apply text-2xl font-semibold text-white;
+  .premium-btn-primary::after {
+    content: '';
+    @apply absolute inset-0 bg-gradient-to-b from-white/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300;
   }
 
-  .dark-text {
-    @apply text-gray-400;
+  .premium-btn-secondary {
+    @apply px-5 py-2.5 bg-[#151A22]/80 backdrop-blur border border-[#2A313C] hover:border-indigo-500/50 hover:bg-[#1E252E] 
+           text-gray-300 text-sm font-medium rounded-xl transition-all duration-300 hover:text-white active:scale-95;
   }
 
-  .dark-text-white {
-    @apply text-white;
+  /* Gradient Text */
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 animate-gradient-x;
   }
 
-  .dark-text-indigo {
-    @apply text-indigo-400;
+  /* Enhanced Inputs */
+  .premium-input {
+    @apply w-full px-4 py-3 bg-[#0B0F15]/50 backdrop-blur-md border border-white/10 rounded-xl text-white text-sm 
+           placeholder-gray-500 focus:border-indigo-500/50 focus:ring-2 focus:ring-indigo-500/20 focus:bg-[#151A22]/80 
+           outline-none transition-all duration-300 shadow-inner;
   }
 
-  .dark-text-emerald {
-    @apply text-emerald-400;
-  }
-
-  .dark-text-amber {
-    @apply text-amber-400;
-  }
-
-  .dark-text-red {
-    @apply text-red-400;
-  }
-
-  /* Dark badges */
-  .dark-badge-success {
-    @apply px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs border border-emerald-500/30;
-  }
-
-  .dark-badge-warning {
-    @apply px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs border border-amber-500/30;
-  }
-
-  .dark-badge-danger {
-    @apply px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs border border-red-500/30;
-  }
-
-  .dark-badge-info {
-    @apply px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded text-xs border border-indigo-500/30;
-  }
-
-  /* Dark progress bar */
-  .dark-progress-bg {
-    @apply bg-[#1E252E] h-1.5 rounded-full;
-  }
-
-  .dark-progress-fill {
-    @apply h-1.5 rounded-full;
-  }
-
-  /* Dark buttons */
-  .dark-btn-primary {
-    @apply px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md transition-all duration-200;
-  }
-
-  .dark-btn-secondary {
-    @apply px-4 py-2 bg-[#1E252E] hover:bg-[#2A313C] text-gray-300 text-sm font-medium rounded-md transition-all duration-200 border border-[#2A313C];
-  }
 
   /* Dark table */
   .dark-table {

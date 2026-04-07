@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import Navbar from '../components/Navbar';
 import { useCurrency } from '../context/CurrencyContext';
-import { useCocomo } from '../context/CocomoContext'; // Import the COCOMO context
+import { useCocomo } from '../context/CocomoContext';
 import toast from 'react-hot-toast';
 import api from '../services/api';
+
+const pageVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+};
 
 const CocomoAnalysis = () => {
   const navigate = useNavigate();
@@ -58,7 +64,7 @@ const CocomoAnalysis = () => {
       setLoadingProjects(true);
       const response = await api.get('/projects?limit=100');
       let loadedProjects = response.data.data || [];
-      
+
       // If the user's database has 0 projects, provide sample options
       if (loadedProjects.length === 0) {
         loadedProjects = [
@@ -67,7 +73,7 @@ const CocomoAnalysis = () => {
           { _id: 'sample-3', name: 'Sample: CRM System' }
         ];
       }
-      
+
       setProjects(loadedProjects);
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -109,7 +115,7 @@ const CocomoAnalysis = () => {
       // COCOMO II calculation constants
       const A = 2.94;
       const B = 0.91;
-      
+
       // Scale factors weights
       const sfWeights = {
         prec: 0.01, flex: 0.01, resl: 0.01, team: 0.01, pmat: 0.01
@@ -173,7 +179,7 @@ const CocomoAnalysis = () => {
 
       setResults(newResults);
       toast.success('Calculation completed!');
-      
+
       return newResults;
     } catch (error) {
       console.error('Calculation error:', error);
@@ -184,7 +190,7 @@ const CocomoAnalysis = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Calculate first if not calculated
     let finalResults = results;
     if (!finalResults) {
@@ -206,7 +212,7 @@ const CocomoAnalysis = () => {
     try {
       // Find existing project by name
       const existingProject = projects.find(p => p.name.toLowerCase() === formData.projectName.trim().toLowerCase());
-      
+
       if (existingProject) {
         finalProjectId = existingProject._id;
       } else {
@@ -225,7 +231,7 @@ const CocomoAnalysis = () => {
         const res = await api.post('/projects', newProjectData);
         finalProjectId = res.data.data._id;
       }
-      
+
       // Create COCOMO project data
       const cocomoData = {
         id: Date.now().toString(),
@@ -253,12 +259,12 @@ const CocomoAnalysis = () => {
       await api.post('/cocomo', cocomoData);
 
       toast.success('COCOMO analysis created and saved to history!');
-      
+
       // Navigate back to dashboard to see the updated data
       setTimeout(() => {
         navigate('/dashboard');
       }, 1500);
-      
+
     } catch (error) {
       console.error('COCOMO submission error:', error);
       toast.error(error.response?.data?.message || 'Failed to create analysis');
@@ -283,22 +289,26 @@ const CocomoAnalysis = () => {
         pmat: 6.24  // High
       }
     });
-    
+
     // Auto-calculate after setting data
     setTimeout(() => calculateCocomo(), 100);
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F15] light-theme:bg-gray-50">
+    <div className="min-h-screen bg-[#05070A] light-theme:bg-gray-50 relative overflow-hidden">
+      {/* Ambient Backgrounds */}
+      <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+      
       <Navbar />
-      <div className="container-custom py-8">
+      <motion.div className="container-custom py-8 relative z-10" variants={pageVariants} initial="hidden" animate="visible">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold text-white light-theme:text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-indigo-400">
             COCOMO II Analysis
           </h1>
           <button
             onClick={loadExampleData}
-            className="px-3 py-1 bg-indigo-600/20 text-indigo-400 rounded-md text-sm hover:bg-indigo-600/30"
+            className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-sm hover:bg-emerald-500/20 transition-all font-medium"
           >
             Load Example
           </button>
@@ -306,9 +316,12 @@ const CocomoAnalysis = () => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Project Selection and Basic Parameters */}
-          <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
-            <h2 className="text-white light-theme:text-gray-900 font-medium mb-4">Basic Parameters</h2>
-            
+          <div className="glass-panel p-6">
+            <h2 className="text-white font-medium mb-4 flex items-center gap-2">
+              <span className="p-1 bg-indigo-500/20 text-indigo-400 rounded">1</span>
+              Basic Parameters
+            </h2>
+
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Project Name</label>
@@ -317,8 +330,8 @@ const CocomoAnalysis = () => {
                   list="cocomo-project-list"
                   placeholder="Select or type a new project..."
                   value={formData.projectName || ''}
-                  onChange={(e) => setFormData({...formData, projectName: e.target.value})}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
+                  className="premium-input"
                 />
                 <datalist id="cocomo-project-list">
                   {projects.map(p => (
@@ -327,13 +340,13 @@ const CocomoAnalysis = () => {
                 </datalist>
                 {loadingProjects && <p className="text-xs text-gray-500 mt-1">Loading projects...</p>}
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">Model Type</label>
                 <select
                   value={formData.modelType}
-                  onChange={(e) => setFormData({...formData, modelType: e.target.value})}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  onChange={(e) => setFormData({ ...formData, modelType: e.target.value })}
+                  className="premium-input"
                 >
                   <option value="organic">Organic (Small teams, familiar)</option>
                   <option value="semi-detached">Semi-detached (Medium)</option>
@@ -350,8 +363,8 @@ const CocomoAnalysis = () => {
                   min="0.1"
                   step="0.1"
                   value={formData.sizeKloc}
-                  onChange={(e) => setFormData({...formData, sizeKloc: parseFloat(e.target.value) || 0})}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  onChange={(e) => setFormData({ ...formData, sizeKloc: parseFloat(e.target.value) || 0 })}
+                  className="premium-input text-center"
                 />
               </div>
               <div>
@@ -361,17 +374,20 @@ const CocomoAnalysis = () => {
                   min="0"
                   step="100"
                   value={formData.laborRatePerMonth}
-                  onChange={(e) => setFormData({...formData, laborRatePerMonth: parseFloat(e.target.value) || 0})}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  onChange={(e) => setFormData({ ...formData, laborRatePerMonth: parseFloat(e.target.value) || 0 })}
+                  className="premium-input text-center"
                 />
               </div>
             </div>
           </div>
 
           {/* Scale Factors */}
-          <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
-            <h2 className="text-white light-theme:text-gray-900 font-medium mb-4">Scale Factors</h2>
-            
+          <div className="glass-panel p-6">
+            <h2 className="text-white font-medium mb-4 flex items-center gap-2">
+              <span className="p-1 bg-indigo-500/20 text-indigo-400 rounded">2</span>
+              Scale Factors
+            </h2>
+
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">PREC - Precedentedness</label>
@@ -389,7 +405,7 @@ const CocomoAnalysis = () => {
                   <span className="text-xs text-gray-500">Very High: 6.20</span>
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">FLEX - Development Flexibility</label>
                 <input
@@ -406,7 +422,7 @@ const CocomoAnalysis = () => {
                   <span className="text-xs text-gray-500">Very High: 6.07</span>
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">RESL - Architecture/Risk Resolution</label>
                 <input
@@ -423,7 +439,7 @@ const CocomoAnalysis = () => {
                   <span className="text-xs text-gray-500">Very High: 7.07</span>
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">TEAM - Team Cohesion</label>
                 <input
@@ -440,7 +456,7 @@ const CocomoAnalysis = () => {
                   <span className="text-xs text-gray-500">Very High: 5.48</span>
                 </div>
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">PMAT - Process Maturity</label>
                 <input
@@ -461,16 +477,19 @@ const CocomoAnalysis = () => {
           </div>
 
           {/* Cost Drivers */}
-          <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
-            <h2 className="text-white light-theme:text-gray-900 font-medium mb-4">Cost Drivers</h2>
-            
+          <div className="glass-panel p-6">
+            <h2 className="text-white font-medium mb-4 flex items-center gap-2">
+              <span className="p-1 bg-indigo-500/20 text-indigo-400 rounded">3</span>
+              Cost Drivers
+            </h2>
+
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">RELY - Reliability</label>
                 <select
                   value={formData.costDrivers.rely}
                   onChange={(e) => handleCostDriverChange('rely', e.target.value)}
-                  className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900"
+                  className="w-full p-2 bg-[#0B0F15] border border-[#2A313C]/50 rounded text-white text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all shadow-inner"
                 >
                   <option value="0.75">Very Low (0.75)</option>
                   <option value="0.88">Low (0.88)</option>
@@ -479,7 +498,7 @@ const CocomoAnalysis = () => {
                   <option value="1.40">Very High (1.40)</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">CPLX - Complexity</label>
                 <select
@@ -495,7 +514,7 @@ const CocomoAnalysis = () => {
                   <option value="1.65">Extra High (1.65)</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">TIME - Time Constraint</label>
                 <select
@@ -509,7 +528,7 @@ const CocomoAnalysis = () => {
                   <option value="1.66">Extra High (1.66)</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">ACAP - Analyst Capability</label>
                 <select
@@ -524,7 +543,7 @@ const CocomoAnalysis = () => {
                   <option value="0.71">Very High (0.71)</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">PCAP - Programmer Capability</label>
                 <select
@@ -539,7 +558,7 @@ const CocomoAnalysis = () => {
                   <option value="0.76">Very High (0.76)</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="text-xs text-gray-400 light-theme:text-gray-600 mb-1 block">TOOL - Software Tools</label>
                 <select
@@ -559,20 +578,35 @@ const CocomoAnalysis = () => {
 
           {/* Calculate Button */}
           <div className="flex justify-end gap-3">
+             <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              placeholder="Additional notes for this estimate..."
+              rows="1"
+              className="premium-input flex-1"
+            />
             <button
               type="button"
-              onClick={calculateCocomo}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              onClick={() => navigate('/dashboard')}
+              className="premium-btn-secondary"
+              disabled={loading}
             >
-              Calculate
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="premium-btn-primary"
+            >
+              ⚡ {loading ? 'Saving...' : 'Save & Calculate'}
             </button>
           </div>
 
           {/* Results */}
           {results && (
-            <div className="bg-[#1E252E] light-theme:bg-white rounded-lg border border-indigo-500/30 p-6">
+            <div className="bg-gradient-to-r from-emerald-900/30 to-[#151A22] light-theme:from-emerald-50 light-theme:to-white rounded-2xl border border-emerald-500/30 p-6 shadow-2xl">
               <h2 className="text-white light-theme:text-gray-900 font-medium mb-4">COCOMO Results</h2>
-              
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div>
                   <p className="text-xs text-gray-400 light-theme:text-gray-600">Effort (person-months)</p>
@@ -636,7 +670,7 @@ const CocomoAnalysis = () => {
 
               <div className="mt-4 p-3 bg-[#0B0F15] light-theme:bg-gray-50 rounded-md">
                 <p className="text-xs text-gray-400 light-theme:text-gray-600">
-                  Parameters: E = {results.parameters.E}, F = {results.parameters.F}, 
+                  Parameters: E = {results.parameters.E}, F = {results.parameters.F},
                   SF Sum = {results.parameters.sfSum}, EM Product = {results.parameters.emProduct}
                 </p>
               </div>
@@ -647,30 +681,39 @@ const CocomoAnalysis = () => {
           <div className="bg-[#151A22] light-theme:bg-white rounded-lg border border-[#2A313C] light-theme:border-gray-200 p-6">
             <textarea
               value={formData.notes}
-              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Additional notes..."
               rows="3"
               className="w-full p-2 bg-[#1E252E] light-theme:bg-white border border-[#2A313C] light-theme:border-gray-200 rounded-md text-white light-theme:text-gray-900 mb-4"
             />
 
             <div className="flex gap-3">
-              <button
+              <motion.button
                 type="submit"
                 disabled={loading || !results}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                whileHover={!loading && results ? { scale: 1.02 } : {}}
+                whileTap={!loading && results ? { scale: 0.98 } : {}}
+                className="flex-1 px-4 py-2.5 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 font-medium shadow-lg shadow-indigo-500/20 transition-colors"
               >
-                {loading ? 'Creating...' : 'Save & Update Dashboard'}
-              </button>
-              
-              <button
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Creating...
+                  </span>
+                ) : 'Save & Update Dashboard'}
+              </motion.button>
+
+              <motion.button
                 type="button"
                 onClick={() => navigate('/dashboard')}
-                className="px-4 py-2 bg-gray-700 text-white light-theme:text-gray-900 rounded-md hover:bg-gray-600"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="px-4 py-2.5 bg-[#1E252E] text-gray-300 rounded-md hover:bg-[#2A313C] border border-[#2A313C] transition-colors"
               >
                 Back to Dashboard
-              </button>
+              </motion.button>
             </div>
-            
+
             {results && (
               <p className="text-xs text-emerald-400 mt-3 text-center">
                 ✓ Click "Save & Update Dashboard" to see real-time updates
@@ -687,7 +730,7 @@ const CocomoAnalysis = () => {
             </p>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };
